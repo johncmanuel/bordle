@@ -34,28 +34,35 @@ app.innerHTML = `
   </div>
   <game-board></game-board>
   <game-keyboard></game-keyboard>
-  <submit-word-form class="view-hidden"></submit-word-form>
 `;
+
+const submitForm = document.createElement('submit-word-form') as SubmitWordForm;
+submitForm.classList.add('view-hidden');
+document.body.appendChild(submitForm);
 
 const board = app.querySelector('game-board') as GameBoard;
 const keyboard = app.querySelector('game-keyboard') as GameKeyboard;
-const submitForm = app.querySelector('submit-word-form') as SubmitWordForm;
 const submitWordBtn = app.querySelector<HTMLButtonElement>('#submit-word-btn')!;
 
 new GameApp(board, keyboard);
 
 function showGameView() {
-  board.classList.remove('view-hidden');
-  keyboard.classList.remove('view-hidden');
-  submitForm.classList.add('view-hidden');
-  submitWordBtn.textContent = 'Submit Word';
+  const overlay = submitForm.querySelector('.modal-overlay');
+  if (overlay) {
+    overlay.classList.add('closing');
+    setTimeout(() => {
+      submitForm.classList.add('view-hidden');
+      overlay.classList.remove('closing');
+    }, 200); 
+  } else {
+    submitForm.classList.add('view-hidden');
+  }
 }
 
 function showSubmitView() {
-  board.classList.add('view-hidden');
-  keyboard.classList.add('view-hidden');
+  const overlay = submitForm.querySelector('.modal-overlay');
+  if (overlay) overlay.classList.remove('closing');
   submitForm.classList.remove('view-hidden');
-  submitWordBtn.textContent = 'Back to Game';
 }
 
 submitWordBtn.addEventListener('click', () => {
@@ -83,9 +90,8 @@ setupDiscordSdk().then((auth) => {
   const avatarUrl = getUserAvatar(user);
 
   avatarImg.src = avatarUrl;
-  avatarImg.style.display = 'block';
 
-  // Show submit button once authenticated
+  avatarImg.style.display = 'block';
   submitWordBtn.style.display = 'block';
   
 }).catch((error) => {

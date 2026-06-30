@@ -281,28 +281,96 @@ game-board, game-keyboard {
 
 submit-word-form {
   display: block;
-  width: 100%;
 }
 
-.submit-form-container {
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  animation: fadeIn 300ms ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+}
+
+.modal-overlay.closing {
+  animation: fadeOut 200ms ease forwards;
+}
+
+.modal-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: 100%;
   max-width: 400px;
-  margin: 0 auto;
-  padding: 28px 24px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
+  margin: 16px;
+  padding: 24px 24px 32px;
+  background: var(--bg-primary);
+  border: 1px solid var(--tile-empty-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  animation: slideUpFade 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.modal-overlay.closing .modal-content {
+  animation: slideDownFade 200ms ease-in forwards;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .submit-title {
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .submit-subtitle {
@@ -402,15 +470,6 @@ submit-word-form {
   cursor: not-allowed;
 }
 
-.btn-cancel {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
 .btn-submit {
   background: var(--tile-bg-correct);
   color: #fff;
@@ -469,7 +528,7 @@ submit-word-form {
     gap: 16px;
   }
 
-  .submit-form-container {
+  .modal-content {
     padding: 20px 16px;
   }
 }

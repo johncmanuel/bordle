@@ -1,28 +1,33 @@
-import {SESSION_TOKEN_KEY } from '../discord/init';
+import { SESSION_TOKEN_KEY } from '../discord/init';
+import { createIcons, X } from 'lucide';
 
 const template = document.createElement('template');
 template.innerHTML = `
-  <div class="submit-form-container">
-    <h2 class="submit-title">Submit a Word</h2>
-    <p class="submit-subtitle">Add a 5-letter word for your guild's future puzzles</p>
+  <div class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="submit-title">SUBMIT A WORD</h2>
+        <i data-lucide="x" class="icon-btn close-btn" title="Close"></i>
+      </div>
+      <p class="submit-subtitle">Add a 5-letter word for your guild's future puzzles</p>
 
-    <div class="submit-field">
-      <label for="word-input">Word</label>
-      <input id="word-input" type="text" maxlength="5" placeholder="HELLO" autocomplete="off" spellcheck="false" />
-    </div>
+      <div class="submit-field">
+        <label for="word-input">Word</label>
+        <input id="word-input" type="text" maxlength="5" placeholder="HELLO" autocomplete="off" spellcheck="false" />
+      </div>
 
-    <div class="submit-field">
-      <label>Hints <span class="hint-optional">(optional, max 3)</span></label>
-      <input class="hint-input" type="text" maxlength="25" placeholder="Hint 1" autocomplete="off" />
-      <input class="hint-input" type="text" maxlength="25" placeholder="Hint 2" autocomplete="off" />
-      <input class="hint-input" type="text" maxlength="25" placeholder="Hint 3" autocomplete="off" />
-    </div>
+      <div class="submit-field">
+        <label>Hints <span class="hint-optional">(optional, max 3)</span></label>
+        <input class="hint-input" type="text" maxlength="25" placeholder="Hint 1" autocomplete="off" />
+        <input class="hint-input" type="text" maxlength="25" placeholder="Hint 2" autocomplete="off" />
+        <input class="hint-input" type="text" maxlength="25" placeholder="Hint 3" autocomplete="off" />
+      </div>
 
-    <div class="submit-status" id="submit-status"></div>
+      <div class="submit-status" id="submit-status"></div>
 
-    <div class="submit-actions">
-      <button class="btn btn-cancel" id="cancel-btn">Cancel</button>
-      <button class="btn btn-submit" id="submit-btn">Submit</button>
+      <div class="submit-actions">
+        <button class="btn btn-submit" id="submit-btn">Submit</button>
+      </div>
     </div>
   </div>
 `;
@@ -31,17 +36,24 @@ export class SubmitWordForm extends HTMLElement {
   private wordInput!: HTMLInputElement;
   private hintInputs!: NodeListOf<HTMLInputElement>;
   private submitBtn!: HTMLButtonElement;
-  private cancelBtn!: HTMLButtonElement;
+  private closeBtn!: HTMLElement;
   private statusEl!: HTMLDivElement;
+  private overlay!: HTMLDivElement;
 
   connectedCallback() {
     this.appendChild(template.content.cloneNode(true));
 
+    createIcons({
+      root: this,
+      icons: { X }
+    });
+
     this.wordInput = this.querySelector('#word-input')!;
     this.hintInputs = this.querySelectorAll('.hint-input');
     this.submitBtn = this.querySelector('#submit-btn')!;
-    this.cancelBtn = this.querySelector('#cancel-btn')!;
+    this.closeBtn = this.querySelector('.close-btn')!;
     this.statusEl = this.querySelector('#submit-status')!;
+    this.overlay = this.querySelector('.modal-overlay')!;
 
     // Auto-uppercase word input and restrict to letters only
     this.wordInput.addEventListener('input', () => {
@@ -49,8 +61,16 @@ export class SubmitWordForm extends HTMLElement {
     });
 
     this.submitBtn.addEventListener('click', () => this.handleSubmit());
-    this.cancelBtn.addEventListener('click', () => {
+    
+    // Close modal handlers
+    const closeHandler = () => {
+      this.resetForm();
       this.dispatchEvent(new CustomEvent('submit-cancel', { bubbles: true }));
+    };
+    
+    this.closeBtn.addEventListener('click', closeHandler);
+    this.overlay.addEventListener('click', (e) => {
+      if (e.target === this.overlay) closeHandler();
     });
   }
 
