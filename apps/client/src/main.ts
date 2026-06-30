@@ -5,6 +5,25 @@ import { GameApp } from './components/app';
 import { SubmitWordForm } from './components/submitForm';
 import { setupDiscordSdk } from './discord/init';
 import { getUserAvatar } from './discord/user';
+import { createIcons, Settings, Lightbulb } from 'lucide';
+
+const header = document.createElement('header');
+header.className = 'top-bar';
+header.innerHTML = `
+  <div class="top-bar-title">Bordle</div>
+  <div class="top-bar-actions">
+    <i data-lucide="lightbulb" class="icon-btn" id="hints-btn" title="Hints"></i>
+    <i data-lucide="settings" class="icon-btn" id="settings-btn" title="Settings"></i>
+  </div>
+`;
+document.body.insertBefore(header, document.body.firstChild);
+
+createIcons({
+  icons: {
+    Settings,
+    Lightbulb
+  }
+});
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
@@ -73,5 +92,5 @@ setupDiscordSdk().then((auth) => {
   console.error('Error setting up Discord SDK:', error);
   const usernameSpan = app.querySelector<HTMLSpanElement>('#username')!;
   if (usernameSpan) usernameSpan.textContent = 'Failed to connect';
-  // TODO: prevent game functionality if not authenticated, or maybe show a message to the user
+  // TODO: prevent game functionality and other stuff if not authenticated, or maybe show a message to the user
 });
