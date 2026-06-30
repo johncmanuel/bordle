@@ -1,0 +1,1 @@
+Reference used for the client: https://github.com/discord/embedded-app-sdk-examples/tree/main/discord-activity-starter

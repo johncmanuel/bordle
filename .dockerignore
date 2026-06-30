@@ -1,0 +1,15 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# .NET build artifacts
+**/bin/
+**/obj/
+
+# Secrets
+.env
+
+# Misc
+.git/
+.gitignore
+**/*.md
