@@ -67,8 +67,14 @@ export class GameKeyboard extends HTMLElement {
 
   private handlePhysicalKey(e: KeyboardEvent) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+
     // Prevent repeat events from held keys
     if (e.repeat) return;
+
+    // Ignore keystrokes if the user is typing somewhere else like an input field 
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
 
     const key = e.key.toUpperCase();
 

@@ -233,6 +233,169 @@ game-board, game-keyboard {
   width: 100%;
 }
 
+submit-word-form {
+  display: block;
+  width: 100%;
+}
+
+.submit-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+}
+
+.submit-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.submit-subtitle {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: -12px;
+}
+
+.submit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.submit-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.hint-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.submit-field input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+
+.submit-field input:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.submit-field input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+#word-input {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 8px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.submit-status {
+  font-size: 0.85rem;
+  min-height: 1.2em;
+  text-align: center;
+  transition: color 200ms ease;
+}
+
+.submit-status.success {
+  color: var(--tile-bg-correct);
+}
+
+.submit-status.error {
+  color: #e74c3c;
+}
+
+.submit-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 100ms ease, opacity 150ms ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-submit {
+  background: var(--tile-bg-correct);
+  color: #fff;
+}
+
+.btn-submit:hover {
+  background: #45a049;
+}
+
+#submit-word-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+#submit-word-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.view-hidden {
+  display: none !important;
+}
+
 
 @media (max-height: 700px) {
   :root {
@@ -259,4 +422,9 @@ game-board, game-keyboard {
     padding: 8px;
     gap: 16px;
   }
+
+  .submit-form-container {
+    padding: 20px 16px;
+  }
 }
+

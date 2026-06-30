@@ -19,10 +19,10 @@ namespace Bordle.Server.Data
             {
                 // Enforce max string length at DB layer for varchar array elements
                 entity.Property(e => e.Hints).HasColumnType("varchar(25)[]");
-                
+
                 // Enforce max 3 hints
                 entity.ToTable(t => t.HasCheckConstraint("CK_Hints_Count", "array_length(\"Hints\", 1) <= 3"));
-                
+
                 // Enforce exactly 5 chars for the word
                 entity.ToTable(t => t.HasCheckConstraint("CK_Word_Length", "char_length(\"Word\") = 5"));
             });
@@ -30,7 +30,7 @@ namespace Bordle.Server.Data
             modelBuilder.Entity<Puzzle>(entity =>
             {
                 entity.Property(e => e.GeneratedHints).HasColumnType("varchar(25)[]");
-                
+
                 // Enforce exactly 5 chars for the fallback word
                 entity.ToTable(t => t.HasCheckConstraint("CK_FallbackWord_Length", "\"FallbackWord\" IS NULL OR char_length(\"FallbackWord\") = 5"));
             });
@@ -39,7 +39,7 @@ namespace Bordle.Server.Data
             {
                 // Ensure that attempts are between 1 and 6
                 entity.ToTable(t => t.HasCheckConstraint("CK_AttemptNumber", "\"AttemptNumber\" BETWEEN 1 AND 6"));
-                
+
                 // Enforce exactly 5 chars for the guess
                 entity.ToTable(t => t.HasCheckConstraint("CK_Guess_Length", "char_length(\"Word\") = 5"));
             });
