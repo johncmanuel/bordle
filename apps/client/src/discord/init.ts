@@ -3,6 +3,9 @@ import type { CommandResponse } from '@discord/embedded-app-sdk';
 
 let auth: CommandResponse<'authenticate'>;
 
+export const baseDiscordCDNUrl = 'https://cdn.discordapp.com';
+export const baseDiscordApiUrl = 'https://discord.com/api';
+
 export async function setupDiscordSdk() {
 	await discordSDK.ready();
 
@@ -46,4 +49,6 @@ export async function setupDiscordSdk() {
 	if (auth == null) {
 		throw new Error('Authenticate command failed');
 	}
+
+    return auth;
 }
