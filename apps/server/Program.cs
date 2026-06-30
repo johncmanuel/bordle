@@ -1,5 +1,7 @@
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
+using Bordle.Server.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +20,12 @@ builder.Services.AddHealthChecks();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    // ignore circular references in JSON serialization
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -34,6 +42,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// register endpoints
 app.RegisterDiscordEndpoints();
 
 app.MapHealthChecks("/health");
