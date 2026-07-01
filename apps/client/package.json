@@ -15,6 +15,6 @@
   },
   "dependencies": {
     "@discord/embedded-app-sdk": "2.5.0",
-    "lucide": "^1.22.0"
+    "lucide": "1.23.0"
   }
 }
