@@ -7,6 +7,13 @@
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
 
+  <Target Name="generatetypescript" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
+    <Message Text="--- installing local tools using: dotnet tool restore ---" Importance="high" />
+    <Exec WorkingDirectory="$(ProjectDir)" Command="dotnet tool restore" />
+    <Message Text="--- generating NSwag typescript API client ---" Importance="high" />
+    <Exec WorkingDirectory="$(ProjectDir)" EnvironmentVariables="ASPNETCORE_ENVIRONMENT=Development" Command="dotnet nswag run nswag.json /variables:Configuration=$(Configuration)" />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
