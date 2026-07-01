@@ -9,7 +9,6 @@ template.innerHTML = `
         <h2 class="submit-title">SUBMIT A WORD</h2>
         <i data-lucide="x" class="icon-btn close-btn" title="Close"></i>
       </div>
-      <p class="submit-subtitle">Add a 5-letter word for your guild's future puzzles</p>
 
       <div class="submit-field">
         <label for="word-input">Word</label>
