@@ -23,7 +23,6 @@ export async function setupDiscordSdk() {
       'identify',
       'guilds',
       'guilds.members.read',
-      'rpc.voice.read',
     ],
   });
 
