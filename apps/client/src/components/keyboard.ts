@@ -1,10 +1,10 @@
+import type { KeyState } from '../types/state';
+
 const ROWS = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
   ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE'],
 ];
-
-type KeyState = 'correct' | 'present' | 'absent';
 
 const STATE_PRIORITY: Record<string, number> = {
   absent: 1,
