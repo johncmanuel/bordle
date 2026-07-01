@@ -1,3 +1,6 @@
-/apps/server/bin
-/apps/server/obj
+# .NET build outputs and binaries
+**/bin/
+**/obj/
+
+# env files
 .env
