@@ -1,4 +1,6 @@
+import type { TTLDiscordUserEntry } from '../types/discord';
 import { baseDiscordCDNUrl } from './init';
+import { discordSDK } from './sdk';
 
 export function getUserAvatar(user: { id: string; avatar?: string | null }): string {
   let avatarUrl = '';
@@ -12,4 +14,33 @@ export function getUserAvatar(user: { id: string; avatar?: string | null }): str
     avatarUrl = `${baseDiscordCDNUrl}/embed/avatars/${defaultAvatarIndex}.webp`;
   }
   return avatarUrl;
+}
+
+const TTL_MS = 10 * 60 * 1000;
+const usernameCache = new Map<string, TTLDiscordUserEntry>();
+
+export async function getDiscordUsername(userId: string): Promise<string> {
+  const now = Date.now();
+  const cached = usernameCache.get(userId);
+
+  if (cached && cached.expiresAt > now) {
+    return cached.username;
+  }
+
+  try {
+    const response = await discordSDK.commands.getUser({ id: userId });
+    if (!response) throw new Error(`No response from Discord SDK for user ID: ${userId}`);
+
+    const username = response.username;
+    
+    usernameCache.set(userId, {
+      username,
+      expiresAt: now + TTL_MS
+    });
+
+    return username;
+  } catch (error) {
+    console.error(`Failed to fetch user ${userId} from Discord SDK:`, error);
+    return "Unknown User";
+  }
 }

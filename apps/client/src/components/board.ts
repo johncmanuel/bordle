@@ -134,6 +134,24 @@ export class GameBoard extends HTMLElement {
     }
   }
 
+  // same as revealRow but without animation
+  // might just add a flag for revealRow to skip animation instead of having a separate method
+  revealRowInstant(pattern: KeyState[]) {
+    if (this.gameOver) return;
+
+    const row = this.tiles[this.currRow];
+    for (let i = 0; i < MAX_COLS; i++) {
+      row[i].dataset.state = pattern[i];
+    }
+
+    const won = pattern.every(s => s === 'correct');
+    this.currRow++;
+    this.currCol = 0;
+    if (won || this.currRow >= MAX_ROWS) {
+      this.gameOver = true;
+    }
+  }
+
   reset() {
     this.currRow = 0;
     this.currCol = 0;
