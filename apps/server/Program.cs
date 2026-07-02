@@ -37,6 +37,8 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =
 });
 
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddSingleton<DictionaryService>();
+builder.Services.AddHostedService<PuzzleGeneratorWorker>();
 
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
@@ -60,6 +62,9 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+var dictionaryService = app.Services.GetRequiredService<DictionaryService>();
+await dictionaryService.InitializeAsync();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -77,9 +82,12 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseOpenApi();
+
 // register endpoints
 app.RegisterDiscordEndpoints();
 app.RegisterSubmissionEndpoints();
+app.RegisterPuzzleEndpoints();
 
 app.MapHealthChecks("/health");
 

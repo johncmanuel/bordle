@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Bordle.Server.Data;
 using Bordle.Server.Data.Models;
@@ -30,19 +31,28 @@ public static class SubmissionEndpoints
         var userId = long.Parse(userIdClaim);
         var guildId = long.Parse(guildIdClaim);
 
-        // Validate word length
         if (string.IsNullOrWhiteSpace(req.Word) || req.Word.Length != 5)
         {
             return TypedResults.BadRequest("Word must be exactly 5 letters.");
         }
 
-        // Validate only alphabetic characters
         if (!req.Word.All(char.IsLetter))
         {
             return TypedResults.BadRequest("Word must contain only letters.");
         }
 
-        // Validate hints
+        var wordUpper = req.Word.ToUpperInvariant();
+
+        // Check if the user has already submitted this word
+        // It's fine if other users already use the same word but we don't want the same user to submit the same word multiple times
+        var alreadyExists = await db.WordSubmissions
+            .AnyAsync(ws => ws.GuildId == guildId && ws.UserId == userId && ws.Word == wordUpper);
+
+        if (alreadyExists)
+        {
+            return TypedResults.BadRequest($"You have already submitted the word '{wordUpper}'! Try another one.");
+        }
+
         var hints = req.Hints ?? [];
         if (hints.Count > 3)
         {
@@ -58,7 +68,7 @@ public static class SubmissionEndpoints
         {
             GuildId = guildId,
             UserId = userId,
-            Word = req.Word.ToUpperInvariant(),
+            Word = wordUpper,
             Hints = hints,
             SubmittedAt = DateTime.UtcNow,
             IsUsed = false
