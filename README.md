@@ -9,3 +9,7 @@ Create a `.env` file at root based on `.env.example`
 ### PostgreSQL
 
 Run `docker compose --profile dev up`
+
+## Test
+
+For the server, run `cd apps/server && dotnet test` 
