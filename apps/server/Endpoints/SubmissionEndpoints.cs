@@ -28,8 +28,15 @@ public static class SubmissionEndpoints
             return TypedResults.Unauthorized();
         }
 
-        var userId = long.Parse(userIdClaim);
-        var guildId = long.Parse(guildIdClaim);
+        if (!long.TryParse(userIdClaim, out var userId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
+
+        if (!long.TryParse(guildIdClaim, out var guildId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
 
         if (string.IsNullOrWhiteSpace(req.Word) || req.Word.Length != 5)
         {

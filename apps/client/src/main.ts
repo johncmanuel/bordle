@@ -4,15 +4,34 @@ import { GameKeyboard } from './components/keyboard';
 import { GameApp } from './components/app';
 import { SubmitWordForm } from './components/submitForm';
 import { HintsForm } from './components/hintsForm';
+import { PlayersSidebar } from './components/playersSidebar';
 import { setupDiscordSdk, SESSION_TOKEN_KEY } from './discord/init';
 import { getUserAvatar } from './discord/user';
-import { createIcons, Settings, Lightbulb, CirclePlus } from 'lucide';
+import { createIcons, Settings, Lightbulb, CirclePlus, Menu, X } from 'lucide';
 import { Client } from './api/client';
+
+// TODO: modularize various parts of this file into separate pieces 
+
+const sidebarEl = document.createElement('aside');
+sidebarEl.id = 'players-sidebar';
+sidebarEl.innerHTML = `<div class="players-list"></div>`;
+document.body.appendChild(sidebarEl);
+
+const sidebarOverlay = document.createElement('div');
+sidebarOverlay.className = 'sidebar-overlay';
+document.body.appendChild(sidebarOverlay);
 
 const header = document.createElement('header');
 header.className = 'top-bar';
 header.innerHTML = `
-  <div class="top-bar-title">Bordle</div>
+  <div class="top-bar-left">
+    <i data-lucide="menu" class="icon-btn hamburger-btn" id="hamburger-btn" title="Players"></i>
+    <div class="top-bar-title">Bordle</div>
+  </div>
+  <div class="top-bar-center" id="profile">
+    <img id="avatar" src="" alt="Avatar" style="width: 24px; height: 24px; border-radius: 50%; display: none;">
+    <span id="username" style="font-weight: 600; font-size: 0.9rem; color: #fff;">Connecting...</span>
+  </div>
   <div class="top-bar-actions">
     <i data-lucide="circle-plus" class="icon-btn" id="submit-word-btn" title="Submit Word"></i>
     <i data-lucide="lightbulb" class="icon-btn" id="hints-btn" title="Hints"></i>
@@ -25,16 +44,31 @@ createIcons({
   icons: {
     Settings,
     Lightbulb,
-    CirclePlus
+    CirclePlus,
+    Menu,
+    X
   }
+});
+
+const hamburgerBtn = document.querySelector<HTMLElement>('#hamburger-btn')!;
+hamburgerBtn.addEventListener('click', () => {
+  const isOpen = sidebarEl.classList.contains('open');
+  if (isOpen) {
+    sidebarEl.classList.remove('open');
+    sidebarOverlay.classList.remove('active');
+  } else {
+    sidebarEl.classList.add('open');
+    sidebarOverlay.classList.add('active');
+  }
+});
+
+sidebarOverlay.addEventListener('click', () => {
+  sidebarEl.classList.remove('open');
+  sidebarOverlay.classList.remove('active');
 });
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
-  <div id="profile" style="display: flex; align-items: center; gap: 12px; margin-bottom: -16px; align-self: flex-start; margin-left: 16px;">
-    <img id="avatar" src="" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; display: none;">
-    <span id="username" style="font-weight: bold; font-size: 1.1rem; color: #fff;">Connecting...</span>
-  </div>
   <game-board></game-board>
   <game-keyboard></game-keyboard>
 `;
@@ -120,7 +154,7 @@ setupDiscordSdk().then(async (auth) => {
   console.log('Discord SDK setup complete');
   const user = auth.user;
   
-  const profileDiv = app.querySelector<HTMLDivElement>('#profile')!;
+  const profileDiv = header.querySelector<HTMLDivElement>('#profile')!;
   const avatarImg = profileDiv.querySelector<HTMLImageElement>('#avatar')!;
   const usernameSpan = profileDiv.querySelector<HTMLSpanElement>('#username')!;
 
@@ -147,6 +181,8 @@ setupDiscordSdk().then(async (auth) => {
     const puzzle = await apiClient.getApiPuzzlesDaily();
     console.log("puzzle fetched:", puzzle);
     hintsForm.setHints(puzzle.hints ?? []);
+
+    new PlayersSidebar(sidebarEl, apiClient, puzzle.puzzleId!);
     new GameApp(board, keyboard, apiClient, puzzle);
   } catch (err) {
     console.warn('No daily puzzle available:', err);

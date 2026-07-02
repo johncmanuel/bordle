@@ -1,3 +1,5 @@
+/* TODO: break this up into multiple .CSS files. wouldn't want this to be a ~10k LOC file */
+
 :root {
   --bg-primary: #121213;
 
@@ -92,6 +94,25 @@ body {
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--text-primary);
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hamburger-btn {
+  display: none;
+}
+
+.top-bar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .top-bar-actions {
@@ -537,4 +558,166 @@ submit-word-form {
 }
 .toast-notification.show {
   opacity: 1;
+}
+
+#players-sidebar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: auto;
+  height: calc(100% - 60px);
+  background-color: transparent;
+  border-right: none;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  overflow-y: auto;
+  transition: transform 0.25s ease;
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.players-empty {
+  padding: 16px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--tile-empty-border);
+  border-radius: 8px;
+  width: max-content;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.player-profile {
+  display: flex;
+  align-items: center;
+}
+
+.player-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.player-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 70px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mini-row {
+  display: flex;
+  gap: 2px;
+}
+
+.mini-tile {
+  width: 12px;
+  height: 12px;
+  border-radius: 1px;
+}
+
+.mini-tile-correct {
+  background-color: var(--tile-bg-correct);
+}
+
+.mini-tile-present {
+  background-color: var(--tile-bg-present);
+}
+
+.mini-tile-absent {
+  background-color: var(--tile-bg-absent);
+}
+
+.mini-tile-empty {
+  background-color: transparent;
+  border: 1px solid var(--tile-empty-border);
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  #players-sidebar {
+    transform: translateX(0);
+  }
+
+  .hamburger-btn {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #players-sidebar {
+    transform: translateX(-100%);
+    z-index: 100;
+  }
+
+  #players-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .hamburger-btn {
+    display: block !important;
+  }
+
+  .key {
+    font-size: 1.25rem;
+  }
+
+  .key.wide {
+    font-size: 0.8rem;
+  }
+
+  .top-bar-title {
+    display: none;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 400px) {
+  #profile {
+    display: none !important;
+  }
 }

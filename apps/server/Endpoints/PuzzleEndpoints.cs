@@ -14,9 +14,10 @@ public static class PuzzleEndpoints
 
         puzzles.MapGet("/daily", GetDailyPuzzle);
         puzzles.MapPost("/{id}/guess", SubmitGuess);
+        puzzles.MapGet("/{id}/players", GetPuzzlePlayers);
     }
 
-    private static async Task<Results<Ok<DailyPuzzleResponse>, NotFound<string>, UnauthorizedHttpResult>> GetDailyPuzzle(
+    private static async Task<Results<Ok<DailyPuzzleResponse>, BadRequest<string>, NotFound<string>, UnauthorizedHttpResult>> GetDailyPuzzle(
         AppDbContext db,
         ClaimsPrincipal user)
     {
@@ -28,8 +29,15 @@ public static class PuzzleEndpoints
             return TypedResults.Unauthorized();
         }
 
-        var userId = long.Parse(userIdClaim);
-        var guildId = long.Parse(guildIdClaim);
+        if (!long.TryParse(userIdClaim, out var userId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
+
+        if (!long.TryParse(guildIdClaim, out var guildId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
 
         var now = DateTime.UtcNow;
 
@@ -129,8 +137,15 @@ public static class PuzzleEndpoints
             return TypedResults.Unauthorized();
         }
 
-        var userId = long.Parse(userIdClaim);
-        var guildId = long.Parse(guildIdClaim);
+        if (!long.TryParse(userIdClaim, out var userId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
+
+        if (!long.TryParse(guildIdClaim, out var guildId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
 
         if (string.IsNullOrWhiteSpace(req.Word) || req.Word.Length != 5)
         {
@@ -200,9 +215,65 @@ public static class PuzzleEndpoints
 
         return TypedResults.Ok(new GuessResponse(wordUpper, states, isFinished, isSolved, returnAnswer, returnAuthorId));
     }
+
+    // Gets the list of players and their guesses for a specific puzzle, excluding the current user, in the same guild.
+    private static async Task<Results<Ok<PuzzlePlayersResponse>, BadRequest<string>, NotFound<string>, UnauthorizedHttpResult>> GetPuzzlePlayers(
+        int id,
+        AppDbContext db,
+        ClaimsPrincipal user)
+    {
+        var userIdClaim = user.FindFirstValue("userId");
+        var guildIdClaim = user.FindFirstValue("guildId");
+
+        if (userIdClaim is null || guildIdClaim is null)
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        if (!long.TryParse(guildIdClaim, out var guildId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
+
+        if (!long.TryParse(userIdClaim, out var userId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
+
+        var puzzle = await db.Puzzles
+            .Include(p => p.Submission)
+            .FirstOrDefaultAsync(p => p.Id == id && p.GuildId == guildId);
+
+        if (puzzle is null)
+        {
+            return TypedResults.NotFound("Puzzle not found.");
+        }
+
+        var answerWord = puzzle.SubmissionId.HasValue
+            ? puzzle.Submission!.Word
+            : puzzle.FallbackWord!;
+
+        var allGuesses = await db.Guesses
+            .Where(g => g.PuzzleId == id && g.GuildId == guildId && g.UserId != userId)
+            .OrderBy(g => g.UserId)
+            .ThenBy(g => g.AttemptNumber)
+            .ToListAsync();
+
+        var playerStates = allGuesses
+            .GroupBy(g => g.UserId)
+            .Select(group => new PlayerState(
+                group.Key,
+                [.. group.Select(g => ComputeLetterStates(g.Word, answerWord))]
+            ))
+            .ToList();
+
+        return TypedResults.Ok(new PuzzlePlayersResponse(playerStates));
+    }
 }
 
 public record DailyPuzzleResponse(int PuzzleId, List<string> Hints, List<GuessResult> Guesses, bool IsFinished, string? Answer, long? AuthorId);
 public record GuessResult(string Word, List<string> States);
 public record GuessRequest(string Word);
 public record GuessResponse(string Word, List<string> States, bool IsFinished, bool IsSolved, string? Answer, long? AuthorId);
+public record PuzzlePlayersResponse(List<PlayerState> Players);
+public record PlayerState(long UserId, List<List<string>> GuessStates);
