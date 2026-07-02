@@ -1,6 +1,9 @@
+using System.Text;
+using System.Text.Json;
 using DotNetEnv;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using NSec.Cryptography;
 using Bordle.Server.Data;
 using Bordle.Server.Data.Models;
 using Bordle.Server.Services;
@@ -17,6 +20,7 @@ public static class DiscordEndpoints
         var discord = app.MapGroup("/api/discord").WithTags("Discord endpoints");
 
         discord.MapPost("/token", GetDiscordToken);
+        discord.MapPost("/interactions", HandleInteraction).AllowAnonymous();
     }
 
     private static async Task<Results<Ok<TokenResponse>, BadRequest<string>>> GetDiscordToken(
@@ -98,6 +102,66 @@ public static class DiscordEndpoints
         }
 
         await db.SaveChangesAsync();
+    }
+
+    // Slash commands will be a WIP once everything else is working. Just gonna lay out the foundation here.
+    // https://docs.discord.com/developers/interactions/overview
+    private static async Task<IResult> HandleInteraction(HttpContext context, IConfiguration config)
+    {
+        var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
+        var signature = context.Request.Headers["X-Signature-Ed25519"].FirstOrDefault();
+        var timestamp = context.Request.Headers["X-Signature-Timestamp"].FirstOrDefault();
+
+        if (string.IsNullOrEmpty(signature) || string.IsNullOrEmpty(timestamp))
+        {
+            return Results.Unauthorized();
+        }
+
+        var publicKeyHex = config["DISCORD_PUBLIC_KEY"]
+            ?? throw new InvalidOperationException("DISCORD_PUBLIC_KEY is not configured.");
+
+        if (!VerifySignature(publicKeyHex, signature, timestamp, body))
+        {
+            return Results.Unauthorized();
+        }
+
+        using var doc = JsonDocument.Parse(body);
+        var root = doc.RootElement;
+        var type = root.GetProperty("type").GetInt32();
+
+        // ping pong check
+        if (type == 1)
+        {
+            return Results.Json(new { type = 1 });
+        }
+
+        // handle the /bordle entry point command
+        if (type == 2)
+        {
+            // type 12 = launch activity
+            return Results.Json(new { type = 12 });
+        }
+
+        return Results.BadRequest("Unknown interaction type.");
+    }
+
+    private static bool VerifySignature(string publicKeyHex, string signature, string timestamp, string body)
+    {
+        try
+        {
+            var algo = SignatureAlgorithm.Ed25519;
+            var pubKeyBytes = Convert.FromHexString(publicKeyHex);
+            var pubKey = PublicKey.Import(algo, pubKeyBytes, KeyBlobFormat.RawPublicKey);
+
+            var signatureBytes = Convert.FromHexString(signature);
+            var msg = Encoding.UTF8.GetBytes(timestamp + body);
+
+            return algo.Verify(pubKey, msg, signatureBytes);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
 
