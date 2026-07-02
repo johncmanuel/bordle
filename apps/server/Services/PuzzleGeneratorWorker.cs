@@ -119,9 +119,9 @@ namespace Bordle.Server.Services
             var vowels = upper.Count("AEIOU".Contains);
 
             // the only hints i could think of
-            hints.Add($"Starts with the letter '{upper[0]}'");
+            hints.Add($"Starts with '{upper[0]}'");
             hints.Add($"Has {vowels} vowel{(vowels != 1 ? "s" : "")}");
-            hints.Add($"Ends with the letter '{upper[^1]}'");
+            hints.Add($"Ends with '{upper[^1]}'");
 
             return hints;
         }
