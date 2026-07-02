@@ -30,6 +30,7 @@ public static class DiscordEndpoints
     {
         string accessToken;
 
+        #if DEBUG
         // If the client is using DiscordSDKMock, it sends a "mock_code". Return a mock token response in that case.
         if (req.Code == "mock_code")
         {
@@ -42,6 +43,7 @@ public static class DiscordEndpoints
             var mockSessionToken = jwtService.GenerateToken(mockUserId, mockGuildId);
             return TypedResults.Ok(new TokenResponse("mock_token", mockSessionToken));
         }
+        #endif
 
         // Exchange the OAuth code for an access token with Discord
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
