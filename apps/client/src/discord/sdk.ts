@@ -3,7 +3,7 @@
 
 import { DiscordSDK, DiscordSDKMock } from '@discord/embedded-app-sdk';
 
-const DISCORD_CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
+const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID;
 
 if (!DISCORD_CLIENT_ID) {
   throw new Error("VITE_DISCORD_CLIENT_ID is not defined in environment variables");
