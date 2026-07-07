@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bordle_db_test
+    restart: always
+    env_file:
+      - .env.test
+    ports:
+      - "5433:5432"
+    volumes:
+      - bordle-db-data-test:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB:-bordle} -U $${POSTGRES_USER:-bordle}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+      args:
+        CONFIGURATION: Debug
+    container_name: bordle_server_test
+    restart: always
+    env_file:
+      - .env.test
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+      args:
+        - VITE_DISCORD_CLIENT_ID=${VITE_DISCORD_CLIENT_ID}
+    container_name: bordle_client_test
+    restart: always
+    ports:
+      - "8081:8080" # use 8081 to differentiate from dev environment
+    depends_on:
+      - server
+
+volumes:
+  bordle-db-data-test:

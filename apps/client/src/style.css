@@ -584,6 +584,7 @@ submit-word-form {
 }
 
 .players-empty {
+  display: none;
   padding: 16px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.85rem;
@@ -685,6 +686,10 @@ submit-word-form {
 
   .hamburger-btn {
     display: block !important;
+  }
+
+  .players-empty {
+    display: block;
   }
 
   .key {

@@ -36,9 +36,10 @@ namespace Bordle.Server.Services
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
 #if DEBUG
-            // generate every minute just for faster iteration
+            // generate every 2 minutes just for faster iteration
             // can be changed as needed
-            var todayUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, 0, DateTimeKind.Utc);
+            var minute = (DateTime.UtcNow.Minute / 2) * 2;
+            var todayUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, minute, 0, DateTimeKind.Utc);
 #else
             var todayUtc = DateTime.UtcNow.Date;
 #endif
@@ -60,7 +61,7 @@ namespace Bordle.Server.Services
 
             foreach (var guild in guildsWithoutPuzzle)
             {
-                var puzzle = await CreatePuzzleForGuildAsync(db, guild.Id, todayUtc);
+                var puzzle = await CreatePuzzleForGuildAsync(db, dictionaryService, guild.Id, todayUtc);
                 db.Puzzles.Add(puzzle);
                 logger.LogInformation("Generated puzzle for guild {GuildId}: {Word}",
                     guild.Id, puzzle.Submission?.Word ?? puzzle.FallbackWord);
@@ -69,13 +70,13 @@ namespace Bordle.Server.Services
             await db.SaveChangesAsync(ct);
         }
 
-        internal async Task<Puzzle> CreatePuzzleForGuildAsync(AppDbContext db, long guildId, DateTime publishDate)
+        internal static async Task<Puzzle> CreatePuzzleForGuildAsync(AppDbContext db, DictionaryService dictionaryService, long guildId, DateTime publishDate)
         {
             // find an unused submission from the given guild and check if it exists
             // if not then fall back to the dictionary 
             var unusedSubmission = await db.WordSubmissions
                 .Where(ws => ws.GuildId == guildId && !ws.IsUsed)
-                .OrderBy(_ => EF.Functions.Random())
+                .OrderBy(_ => Guid.NewGuid())
                 .FirstOrDefaultAsync();
 
             if (unusedSubmission is not null)
@@ -88,7 +89,7 @@ namespace Bordle.Server.Services
                     SubmissionId = unusedSubmission.Id,
                     PublishedAt = publishDate,
 #if DEBUG
-                    ClosedAt = publishDate.AddMinutes(1),
+                    ClosedAt = publishDate.AddMinutes(2),
 #else
                     ClosedAt = publishDate.AddDays(1),
 #endif
@@ -105,7 +106,7 @@ namespace Bordle.Server.Services
                 GeneratedHints = hints,
                 PublishedAt = publishDate,
 #if DEBUG
-                ClosedAt = publishDate.AddMinutes(1),
+                ClosedAt = publishDate.AddMinutes(2),
 #else
                 ClosedAt = publishDate.AddDays(1),
 #endif

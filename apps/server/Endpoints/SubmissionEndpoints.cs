@@ -6,13 +6,18 @@ using Bordle.Server.Data.Models;
 
 public static class SubmissionEndpoints
 {
+    // a cooldown for already submitted words. users can submit the
+    // same word again after submitting a number of different words
+    private static readonly int CooldownLimit = 5;
+
     public static void RegisterSubmissionEndpoints(this WebApplication app)
     {
         var submissions = app.MapGroup("/api/submissions")
             .WithTags("Submission endpoints")
             .RequireAuthorization();
 
-        submissions.MapPost("/", SubmitWord);
+        submissions.MapPost("/", SubmitWord)
+            .RequireRateLimiting("WordSubmissionLimit");
     }
 
     private static async Task<Results<Ok<SubmissionResponse>, BadRequest<string>, UnauthorizedHttpResult>> SubmitWord(
@@ -49,15 +54,16 @@ public static class SubmissionEndpoints
         }
 
         var wordUpper = req.Word.ToUpperInvariant();
+        var recentWords = await db.WordSubmissions
+            .Where(ws => ws.GuildId == guildId && ws.UserId == userId)
+            .OrderByDescending(ws => ws.SubmittedAt)
+            .Take(CooldownLimit)
+            .Select(ws => ws.Word)
+            .ToListAsync();
 
-        // Check if the user has already submitted this word
-        // It's fine if other users already use the same word but we don't want the same user to submit the same word multiple times
-        var alreadyExists = await db.WordSubmissions
-            .AnyAsync(ws => ws.GuildId == guildId && ws.UserId == userId && ws.Word == wordUpper);
-
-        if (alreadyExists)
+        if (recentWords.Contains(wordUpper))
         {
-            return TypedResults.BadRequest($"You have already submitted the word '{wordUpper}'! Try another one.");
+            return TypedResults.BadRequest($"You have recently submitted the word '{wordUpper}'. Try submitting some different words first!");
         }
 
         var hints = req.Hints ?? [];

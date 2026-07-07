@@ -321,7 +321,7 @@ export interface DailyPuzzleResponse {
     guesses?: GuessResult[];
     isFinished?: boolean;
     answer?: string | undefined;
-    authorId?: number | undefined;
+    authorUsername?: string | undefined;
 }
 
 export interface GuessResult {
@@ -335,7 +335,7 @@ export interface GuessResponse {
     isFinished?: boolean;
     isSolved?: boolean;
     answer?: string | undefined;
-    authorId?: number | undefined;
+    authorUsername?: string | undefined;
 }
 
 export interface GuessRequest {
@@ -348,6 +348,8 @@ export interface PuzzlePlayersResponse {
 
 export interface PlayerState {
     userId?: number;
+    username?: string;
+    avatar?: string | undefined;
     guessStates?: string[][];
 }
 

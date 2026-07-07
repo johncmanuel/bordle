@@ -38,7 +38,7 @@ public static class DiscordEndpoints
             const long mockUserId = 1L;
             const long mockGuildId = 1L;
 
-            await UpsertUserAndGuild(db, mockUserId, mockGuildId);
+            await UpsertUserAndGuild(db, mockUserId, "BordleDev", null, mockGuildId);
 
             var mockSessionToken = jwtService.GenerateToken(mockUserId, mockGuildId);
             return TypedResults.Ok(new TokenResponse("mock_token", mockSessionToken));
@@ -48,7 +48,7 @@ public static class DiscordEndpoints
         // Exchange the OAuth code for an access token with Discord
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["client_id"] = Env.GetString("VITE_CLIENT_ID"),
+            ["client_id"] = Env.GetString("VITE_DISCORD_CLIENT_ID"),
             ["client_secret"] = Env.GetString("CLIENT_SECRET"),
             ["grant_type"] = "authorization_code",
             ["code"] = req.Code
@@ -85,17 +85,23 @@ public static class DiscordEndpoints
             return TypedResults.BadRequest("Invalid GuildId.");
         }
 
-        await UpsertUserAndGuild(db, discordUser.Id, parsedGuildId);
+        await UpsertUserAndGuild(db, discordUser.Id, discordUser.Username, discordUser.Avatar, parsedGuildId);
 
         var sessionToken = jwtService.GenerateToken(discordUser.Id, parsedGuildId);
         return TypedResults.Ok(new TokenResponse(accessToken, sessionToken));
     }
 
-    private static async Task UpsertUserAndGuild(AppDbContext db, long userId, long guildId)
+    private static async Task UpsertUserAndGuild(AppDbContext db, long userId, string username, string? avatar, long guildId)
     {
-        if (!await db.Users.AnyAsync(u => u.Id == userId))
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null)
         {
-            db.Users.Add(new User { Id = userId });
+            db.Users.Add(new User { Id = userId, Username = username, Avatar = avatar });
+        }
+        else
+        {
+            user.Username = username;
+            user.Avatar = avatar;
         }
 
         if (!await db.Guilds.AnyAsync(g => g.Id == guildId))
@@ -176,4 +182,4 @@ public record TokenResponse(
 internal record DiscordTokenResult(
     [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string AccessToken
 );
-internal record DiscordUserResult(long Id, string Username);
+internal record DiscordUserResult(long Id, string Username, string? Avatar);

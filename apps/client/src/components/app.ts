@@ -2,8 +2,7 @@ import { GameBoard } from './board';
 import type { GameKeyboard } from './keyboard';
 import type { KeyState } from '../types/state';
 import type { Client, DailyPuzzleResponse } from '../api/client';
-import { ApiException } from '../api/client';
-import { getDiscordUsername } from '../discord/user';
+
 
 export class GameApp {
   private board: GameBoard;
@@ -22,22 +21,7 @@ export class GameApp {
     this.restoreExistingGuesses(puzzle);
 
     if (puzzle.isFinished) {
-      this.handleGameOver(puzzle.answer!, puzzle.authorId);
-    }
-
-    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
-  }
-
-  private async handleVisibilityChange() {
-    if (document.visibilityState === 'visible') {
-      try {
-        const newPuzzle = await this.apiClient.getApiPuzzlesDaily();
-        if (newPuzzle.puzzleId !== this.puzzleId) {
-          this.showReloadToast();
-        }
-      } catch (err) {
-        console.error('Failed to check for new puzzle on visibility change:', err);
-      }
+      this.handleGameOver(puzzle.answer!, puzzle.authorUsername);
     }
   }
 
@@ -88,19 +72,11 @@ export class GameApp {
         if (result.isFinished) {
           // wait for reveal animation to finish before showing toast
           setTimeout(() => {
-            this.handleGameOver(result.answer!, result.authorId);
+            this.handleGameOver(result.answer!, result.authorUsername);
           }, 300 * 5 + 500); 
         }
 
       } catch (err) {
-        if (err instanceof ApiException && err.status === 400) {
-          // show the toast if the error message indicates the puzzle is no longer active
-          // TODO: there's prob a better way to do this but will improve it later
-          if (err.response.includes('no longer active')) {
-            this.showReloadToast();
-            return;
-          }
-        }
         console.error('Guess rejected:', err);
         this.board.shakeCurrentRow();
       }
@@ -109,11 +85,8 @@ export class GameApp {
     }
   }
 
-  private async handleGameOver(answer: string, authorId?: number | null) {
-    let authorName = "Bordle";
-    if (authorId) {
-      authorName = await getDiscordUsername(authorId.toString());
-    }
+  private async handleGameOver(answer: string, authorUsername?: string | null) {
+    let authorName = authorUsername || "Bordle";
 
     this.showToast(`The word was ${answer.toUpperCase()}, submitted by ${authorName}`);
   }
@@ -143,22 +116,5 @@ export class GameApp {
       clearTimeout(autoHideTimeout);
       hideToast();
     });
-  }
-
-  private showReloadToast() {
-    if (document.querySelector('.toast-reload')) return;
-
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification toast-reload';
-    toast.innerHTML = 'A new daily puzzle is available! <span style="text-decoration: underline; margin-left: 8px;">Refresh</span>';
-    document.body.appendChild(toast);
-
-    toast.addEventListener('click', () => {
-      window.location.reload();
-    });
-
-    setTimeout(() => {
-      toast.classList.add('show');
-    }, 100);
   }
 }

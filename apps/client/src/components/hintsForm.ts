@@ -42,7 +42,7 @@ export class HintsForm extends HTMLElement {
     });
   }
 
-  public setHints(hints: string[]) {
+  public setHints(hints: string[], puzzleId: number) {
     this.hintsContainer.innerHTML = '';
 
     if (!hints || hints.length === 0) {
@@ -54,6 +54,10 @@ export class HintsForm extends HTMLElement {
       return;
     }
 
+    const stateKey = `bordle_revealed_hints_${puzzleId}`;
+    const revealedHintsStr = sessionStorage.getItem(stateKey);
+    const revealedHints: number[] = revealedHintsStr ? JSON.parse(revealedHintsStr) : [];
+
     hints.forEach((hint, index) => {
       const hintEl = document.createElement('div');
       hintEl.style.padding = '12px';
@@ -62,14 +66,38 @@ export class HintsForm extends HTMLElement {
       hintEl.style.color = '#fff';
       hintEl.style.fontWeight = 'bold';
       hintEl.style.fontSize = '1.1rem';
+      hintEl.style.cursor = 'pointer';
+      hintEl.style.userSelect = 'none';
       
       const numSpan = document.createElement('span');
       numSpan.style.color = '#818384';
       numSpan.style.marginRight = '8px';
       numSpan.textContent = `${index + 1}.`;
       
+      const contentSpan = document.createElement('span');
+      
+      const isRevealed = revealedHints.includes(index);
+      if (isRevealed) {
+        contentSpan.textContent = hint;
+      } else {
+        contentSpan.textContent = 'Tap to reveal hint';
+        contentSpan.style.fontStyle = 'italic';
+        contentSpan.style.color = '#818384';
+      }
+      
       hintEl.appendChild(numSpan);
-      hintEl.appendChild(document.createTextNode(hint));
+      hintEl.appendChild(contentSpan);
+
+      hintEl.addEventListener('click', () => {
+        if (!revealedHints.includes(index)) {
+          revealedHints.push(index);
+          sessionStorage.setItem(stateKey, JSON.stringify(revealedHints));
+          contentSpan.textContent = hint;
+          contentSpan.style.fontStyle = 'normal';
+          contentSpan.style.color = '#fff';
+        }
+      });
+
       this.hintsContainer.appendChild(hintEl);
     });
   }

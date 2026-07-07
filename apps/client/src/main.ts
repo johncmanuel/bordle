@@ -71,6 +71,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <game-board></game-board>
   <game-keyboard></game-keyboard>
+  <div id="puzzle-info" style="font-size: 0.8rem; color: #818384; text-align: center; margin-top: 12px; font-weight: bold; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"></div>
 `;
 
 const submitForm = document.createElement('submit-word-form') as SubmitWordForm;
@@ -163,7 +164,6 @@ setupDiscordSdk().then(async (auth) => {
   const avatarUrl = getUserAvatar(user);
 
   avatarImg.src = avatarUrl;
-
   avatarImg.style.display = 'block';
 
   const sessionToken = sessionStorage.getItem(SESSION_TOKEN_KEY);
@@ -180,18 +180,39 @@ setupDiscordSdk().then(async (auth) => {
   try {
     const puzzle = await apiClient.getApiPuzzlesDaily();
     console.log("puzzle fetched:", puzzle);
-    hintsForm.setHints(puzzle.hints ?? []);
+    hintsForm.setHints(puzzle.hints ?? [], puzzle.puzzleId!);
+
+    const puzzleInfo = app.querySelector<HTMLDivElement>('#puzzle-info')!;
+    const today = new Date().toLocaleDateString(undefined, {
+      month: 'long', day: 'numeric', year: 'numeric'
+    });
+    puzzleInfo.innerHTML = `No. ${puzzle.puzzleId}<br>${today}`;
 
     new PlayersSidebar(sidebarEl, apiClient, puzzle.puzzleId!);
     new GameApp(board, keyboard, apiClient, puzzle);
   } catch (err) {
     console.warn('No daily puzzle available:', err);
-    usernameSpan.textContent = `No puzzle today!`;
+    const noPuzzleOverlay = document.createElement('div');
+    noPuzzleOverlay.className = 'modal-overlay';
+    noPuzzleOverlay.innerHTML = `
+      <div class="modal-content" style="text-align: center; padding: 32px 24px;">
+        <h2 class="submit-title">Bordle</h2>
+        <p style="margin-top: 24px; font-size: 1.2rem; color: var(--text-primary);">No puzzle today!</p>
+        <p style="margin-top: 12px; font-size: 0.95rem; color: #818384;">Check back tomorrow for a new word.</p>
+      </div>
+    `;
+    document.body.appendChild(noPuzzleOverlay);
   }
-
 }).catch((error) => {
   console.error('Error setting up Discord SDK:', error);
-  const usernameSpan = app.querySelector<HTMLSpanElement>('#username')!;
-  if (usernameSpan) usernameSpan.textContent = 'Failed to connect';
-  // TODO: prevent game functionality and other stuff if not authenticated, or maybe show a message to the user
+  const failedOverlay = document.createElement('div');
+  failedOverlay.className = 'modal-overlay';
+  failedOverlay.innerHTML = `
+    <div class="modal-content" style="text-align: center; padding: 32px 24px;">
+      <h2 class="submit-title">Bordle</h2>
+      <p style="margin-top: 24px; font-size: 1.2rem; color: var(--text-primary);">Failed to connect</p>
+      <p style="margin-top: 12px; font-size: 0.95rem; color: #818384;">Could not connect to Discord. Please try again later.</p>
+    </div>
+  `;
+  document.body.appendChild(failedOverlay);
 });

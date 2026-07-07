@@ -1,5 +1,5 @@
 import type { Client } from '../api/client';
-import { getDiscordUsername, getUserAvatar } from '../discord/user';
+import { getUserAvatar } from '../discord/user';
 
 export class PlayersSidebar {
   private container: HTMLElement;
@@ -23,13 +23,11 @@ export class PlayersSidebar {
 
       const serverPlayers = data.players || [];
 
-      const playerEntries = await Promise.all(
-        serverPlayers.map(async (player) => {
-          const username = await getDiscordUsername(player.userId!.toString());
-          const avatarUrl = getUserAvatar({ id: player.userId!.toString() });
-          return { username, avatarUrl, guessStates: player.guessStates ?? [] };
-        })
-      );
+      const playerEntries = serverPlayers.map((player) => {
+        const username = player.username || "Unknown User";
+        const avatarUrl = getUserAvatar({ id: player.userId!.toString(), avatar: player.avatar });
+        return { username, avatarUrl, guessStates: player.guessStates ?? [] };
+      });
 
       // add some dummy data for dev
       if (import.meta.env.DEV) {

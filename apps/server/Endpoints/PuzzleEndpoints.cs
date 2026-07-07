@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Bordle.Server.Data;
 using Bordle.Server.Data.Models;
+using Bordle.Server.Services;
 
 public static class PuzzleEndpoints
 {
@@ -19,7 +20,8 @@ public static class PuzzleEndpoints
 
     private static async Task<Results<Ok<DailyPuzzleResponse>, BadRequest<string>, NotFound<string>, UnauthorizedHttpResult>> GetDailyPuzzle(
         AppDbContext db,
-        ClaimsPrincipal user)
+        ClaimsPrincipal user,
+        DictionaryService dictionaryService)
     {
         var userIdClaim = user.FindFirstValue("userId");
         var guildIdClaim = user.FindFirstValue("guildId");
@@ -43,13 +45,36 @@ public static class PuzzleEndpoints
 
         var puzzle = await db.Puzzles
             .Include(p => p.Submission)
+            .ThenInclude(s => s!.User)
             .Where(p => p.GuildId == guildId && p.PublishedAt <= now)
             .OrderByDescending(p => p.PublishedAt)
             .FirstOrDefaultAsync();
 
+        // create a puzzle if there aren't any for today yet
+        // resolves the issue where upon first startup ever, there are no puzzles in the database and the user can't play until the next day
+        // TODO: reuse logic in a similar function (it's already in PuzzleGeneratorWorker.cs) to avoid duplication
         if (puzzle is null)
         {
-            return TypedResults.NotFound("No puzzle available yet. Check back soon!");
+#if DEBUG
+            var minute = now.Minute / 2 * 2;
+            var todayUtc = new DateTime(now.Year, now.Month, now.Day, now.Hour, minute, 0, DateTimeKind.Utc);
+#else
+            var todayUtc = now.Date;
+#endif
+            puzzle = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictionaryService, guildId, todayUtc);
+
+            db.Puzzles.Add(puzzle);
+            await db.SaveChangesAsync();
+
+            puzzle = await db.Puzzles
+                .Include(p => p.Submission)
+                .ThenInclude(s => s!.User)
+                .FirstOrDefaultAsync(p => p.Id == puzzle.Id);
+                
+            if (puzzle is null)
+            {
+                return TypedResults.NotFound("Failed to generate puzzle.");
+            }
         }
 
         var hints = puzzle.SubmissionId.HasValue
@@ -70,7 +95,7 @@ public static class PuzzleEndpoints
 
         var isFinished = prevGuesses.Count >= 6 || prevGuesses.Any(g => g.Equals(answerWord, StringComparison.OrdinalIgnoreCase));
         string? returnAnswer = isFinished ? answerWord : null;
-        long? returnAuthorId = isFinished ? puzzle.Submission?.UserId : null;
+        string? returnAuthorUsername = isFinished ? puzzle.Submission?.User?.Username : null;
 
         return TypedResults.Ok(new DailyPuzzleResponse(
             puzzle.Id,
@@ -78,7 +103,7 @@ public static class PuzzleEndpoints
             guessResults,
             isFinished,
             returnAnswer,
-            returnAuthorId
+            returnAuthorUsername
         ));
     }
 
@@ -161,6 +186,7 @@ public static class PuzzleEndpoints
 
         var puzzle = await db.Puzzles
             .Include(p => p.Submission)
+            .ThenInclude(s => s!.User)
             .FirstOrDefaultAsync(p => p.Id == id && p.GuildId == guildId);
 
         if (puzzle is null)
@@ -211,9 +237,9 @@ public static class PuzzleEndpoints
         var isFinished = isSolved || numExistingGuesses + 1 >= 6;
 
         string? returnAnswer = isFinished ? answerWord : null;
-        long? returnAuthorId = isFinished ? puzzle.Submission?.UserId : null;
+        string? returnAuthorUsername = isFinished ? puzzle.Submission?.User?.Username : null;
 
-        return TypedResults.Ok(new GuessResponse(wordUpper, states, isFinished, isSolved, returnAnswer, returnAuthorId));
+        return TypedResults.Ok(new GuessResponse(wordUpper, states, isFinished, isSolved, returnAnswer, returnAuthorUsername));
     }
 
     // Gets the list of players and their guesses for a specific puzzle, excluding the current user, in the same guild.
@@ -254,6 +280,7 @@ public static class PuzzleEndpoints
             : puzzle.FallbackWord!;
 
         var allGuesses = await db.Guesses
+            .Include(g => g.User)
             .Where(g => g.PuzzleId == id && g.GuildId == guildId && g.UserId != userId)
             .OrderBy(g => g.UserId)
             .ThenBy(g => g.AttemptNumber)
@@ -263,6 +290,8 @@ public static class PuzzleEndpoints
             .GroupBy(g => g.UserId)
             .Select(group => new PlayerState(
                 group.Key,
+                group.First().User?.Username ?? "Unknown User",
+                group.First().User?.Avatar,
                 [.. group.Select(g => ComputeLetterStates(g.Word, answerWord))]
             ))
             .ToList();
@@ -271,9 +300,9 @@ public static class PuzzleEndpoints
     }
 }
 
-public record DailyPuzzleResponse(int PuzzleId, List<string> Hints, List<GuessResult> Guesses, bool IsFinished, string? Answer, long? AuthorId);
+public record DailyPuzzleResponse(int PuzzleId, List<string> Hints, List<GuessResult> Guesses, bool IsFinished, string? Answer, string? AuthorUsername);
 public record GuessResult(string Word, List<string> States);
 public record GuessRequest(string Word);
-public record GuessResponse(string Word, List<string> States, bool IsFinished, bool IsSolved, string? Answer, long? AuthorId);
+public record GuessResponse(string Word, List<string> States, bool IsFinished, bool IsSolved, string? Answer, string? AuthorUsername);
 public record PuzzlePlayersResponse(List<PlayerState> Players);
-public record PlayerState(long UserId, List<List<string>> GuessStates);
+public record PlayerState(long UserId, string Username, string? Avatar, List<List<string>> GuessStates);

@@ -1,0 +1,13 @@
+# test version of caddyfile
+
+:8080 {
+    handle /api/* {
+        # NOTE: "server" is the container name for the dotnet server in docker compose
+        reverse_proxy http://server:8080
+    }
+
+    handle {
+        root * /srv
+        file_server
+    }
+}
