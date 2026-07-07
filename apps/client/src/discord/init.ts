@@ -11,7 +11,7 @@ export async function setupDiscordSdk() {
   await discordSDK.ready();
 
   const { code } = await discordSDK.commands.authorize({
-    client_id: import.meta.env.VITE_CLIENT_ID,
+    client_id: import.meta.env.VITE_DISCORD_CLIENT_ID,
     response_type: 'code',
     state: '',
     prompt: 'none',
@@ -26,7 +26,10 @@ export async function setupDiscordSdk() {
     ],
   });
 
-  const guildId = discordSDK.guildId ?? '0';
+  const guildId = discordSDK.guildId;
+  if (!guildId) {
+    throw new Error('Guild ID is not available from Discord SDK');
+  }
 
   const response = await fetch('/api/discord/token', {
     method: 'POST',
