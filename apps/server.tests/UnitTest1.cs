@@ -48,6 +48,7 @@ public class PuzzleGeneratorTests
     public async Task CreatePuzzle_WithUnusedSubmission_UsesSubmission()
     {
         using var db = CreateInMemoryDb();
+        var dictService = CreateMockDictionaryService();
         var guildId = 1L;
 
         db.Guilds.Add(new Guild { Id = guildId });
@@ -63,9 +64,7 @@ public class PuzzleGeneratorTests
         });
         await db.SaveChangesAsync();
 
-        var worker = CreateWorker();
-
-        var puzzle = await worker.CreatePuzzleForGuildAsync(db, guildId, DateTime.UtcNow.Date);
+        var puzzle = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildId, DateTime.UtcNow.Date);
 
         Assert.NotNull(puzzle.SubmissionId);
         Assert.Null(puzzle.FallbackWord);
@@ -79,14 +78,13 @@ public class PuzzleGeneratorTests
     public async Task CreatePuzzle_WithNoSubmissions_UsesFallbackDictionary()
     {
         using var db = CreateInMemoryDb();
+        var dictService = CreateMockDictionaryService();
         var guildId = 1L;
 
         db.Guilds.Add(new Guild { Id = guildId });
         await db.SaveChangesAsync();
 
-        var worker = CreateWorker();
-
-        var puzzle = await worker.CreatePuzzleForGuildAsync(db, guildId, DateTime.UtcNow.Date);
+        var puzzle = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildId, DateTime.UtcNow.Date);
 
         Assert.Null(puzzle.SubmissionId);
         Assert.NotNull(puzzle.FallbackWord);
@@ -99,6 +97,7 @@ public class PuzzleGeneratorTests
     public async Task CreatePuzzle_SkipsAlreadyUsedSubmissions()
     {
         using var db = CreateInMemoryDb();
+        var dictService = CreateMockDictionaryService();
         var guildId = 1L;
 
         db.Guilds.Add(new Guild { Id = guildId });
@@ -115,9 +114,7 @@ public class PuzzleGeneratorTests
         });
         await db.SaveChangesAsync();
 
-        var worker = CreateWorker();
-
-        var puzzle = await worker.CreatePuzzleForGuildAsync(db, guildId, DateTime.UtcNow.Date);
+        var puzzle = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildId, DateTime.UtcNow.Date);
 
         // should fall back to dictionary since the only submission is used
         Assert.Null(puzzle.SubmissionId);
@@ -173,5 +170,107 @@ public class PuzzleGeneratorTests
         Assert.Equal("present", states[2]); // E (matches pos 4 E in ABIDE)
         Assert.Equal("absent", states[3]);  // E (duplicate, already consumed)
         Assert.Equal("present", states[4]); // D
+    }
+
+    [Fact]
+    public async Task CreatePuzzle_FirstPuzzleForGuild_SequenceNumberIsOne()
+    {
+        using var db = CreateInMemoryDb();
+        var dictService = CreateMockDictionaryService();
+        var guildId = 1L;
+
+        db.Guilds.Add(new Guild { Id = guildId });
+        await db.SaveChangesAsync();
+
+        var puzzle = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildId, DateTime.UtcNow.Date);
+
+        Assert.Equal(1, puzzle.SequenceNumber);
+    }
+
+    [Fact]
+    public async Task CreatePuzzle_SecondPuzzleForGuild_SequenceNumberIsTwo()
+    {
+        using var db = CreateInMemoryDb();
+        var dictService = CreateMockDictionaryService();
+        var guildId = 1L;
+
+        db.Guilds.Add(new Guild { Id = guildId });
+        db.Puzzles.Add(new Puzzle
+        {
+            GuildId = guildId,
+            FallbackWord = "APPLE",
+            SequenceNumber = 1,
+            PublishedAt = DateTime.UtcNow.AddDays(-1),
+            ClosedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var puzzle = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildId, DateTime.UtcNow.Date);
+
+        Assert.Equal(2, puzzle.SequenceNumber);
+    }
+
+    [Fact]
+    public async Task CreatePuzzle_MultipleGuilds_SequenceNumbersAreIndependent()
+    {
+        using var db = CreateInMemoryDb();
+        var dictService = CreateMockDictionaryService();
+        var guildA = 100L;
+        var guildB = 200L;
+
+        db.Guilds.Add(new Guild { Id = guildA });
+        db.Guilds.Add(new Guild { Id = guildB });
+
+        // Guild A already has 3 puzzles
+        for (var i = 1; i <= 3; i++)
+        {
+            db.Puzzles.Add(new Puzzle
+            {
+                GuildId = guildA,
+                FallbackWord = "APPLE",
+                SequenceNumber = i,
+                PublishedAt = DateTime.UtcNow.AddDays(-i),
+                ClosedAt = DateTime.UtcNow.AddDays(-i + 1)
+            });
+        }
+        await db.SaveChangesAsync();
+
+        // Guild B creates its first puzzle — should be 1, not 4
+        var puzzleB = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildB, DateTime.UtcNow.Date);
+        Assert.Equal(1, puzzleB.SequenceNumber);
+
+        // Guild A creates its 4th puzzle — should be 4
+        db.Puzzles.Add(puzzleB); // save B first so it's in the DB
+        await db.SaveChangesAsync();
+
+        var puzzleA = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildA, DateTime.UtcNow.Date);
+        Assert.Equal(4, puzzleA.SequenceNumber);
+    }
+
+    [Fact]
+    public async Task CreatePuzzle_SequenceNumberIncrementsAfterSave()
+    {
+        using var db = CreateInMemoryDb();
+        var dictService = CreateMockDictionaryService();
+        var guildId = 1L;
+
+        db.Guilds.Add(new Guild { Id = guildId });
+        await db.SaveChangesAsync();
+
+        // Create and save first puzzle
+        var puzzle1 = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildId, DateTime.UtcNow.Date);
+        Assert.Equal(1, puzzle1.SequenceNumber);
+        db.Puzzles.Add(puzzle1);
+        await db.SaveChangesAsync();
+
+        // Create second puzzle — should see the first one in the DB
+        var puzzle2 = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildId, DateTime.UtcNow.Date.AddDays(1));
+        Assert.Equal(2, puzzle2.SequenceNumber);
+        db.Puzzles.Add(puzzle2);
+        await db.SaveChangesAsync();
+
+        // Third
+        var puzzle3 = await PuzzleGeneratorWorker.CreatePuzzleForGuildAsync(db, dictService, guildId, DateTime.UtcNow.Date.AddDays(2));
+        Assert.Equal(3, puzzle3.SequenceNumber);
     }
 }

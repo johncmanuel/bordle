@@ -7,7 +7,7 @@
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
 
-  <Target Name="generatetypescript" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' ">
+  <Target Name="generatetypescript" AfterTargets="Build" Condition=" '$(Configuration)' == 'Debug' And '$(RunNSwag)' != 'False' ">
     <Message Text="--- installing local tools using: dotnet tool restore ---" Importance="high" />
     <Exec WorkingDirectory="$(ProjectDir)" Command="dotnet tool restore" />
     <Message Text="--- generating NSwag typescript API client ---" Importance="high" />

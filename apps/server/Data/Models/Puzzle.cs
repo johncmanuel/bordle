@@ -14,6 +14,8 @@ namespace Bordle.Server.Data.Models
         public string? FallbackWord { get; set; }
         public List<string>? GeneratedHints { get; set; }
 
+        public int SequenceNumber { get; set; }
+
         public DateTime PublishedAt { get; set; }
         public DateTime ClosedAt { get; set; }
 

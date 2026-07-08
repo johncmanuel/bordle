@@ -99,6 +99,7 @@ public static class PuzzleEndpoints
 
         return TypedResults.Ok(new DailyPuzzleResponse(
             puzzle.Id,
+            puzzle.SequenceNumber,
             hints,
             guessResults,
             isFinished,
@@ -300,7 +301,7 @@ public static class PuzzleEndpoints
     }
 }
 
-public record DailyPuzzleResponse(int PuzzleId, List<string> Hints, List<GuessResult> Guesses, bool IsFinished, string? Answer, string? AuthorUsername);
+public record DailyPuzzleResponse(int PuzzleId, int SequenceNumber, List<string> Hints, List<GuessResult> Guesses, bool IsFinished, string? Answer, string? AuthorUsername);
 public record GuessResult(string Word, List<string> States);
 public record GuessRequest(string Word);
 public record GuessResponse(string Word, List<string> States, bool IsFinished, bool IsSolved, string? Answer, string? AuthorUsername);

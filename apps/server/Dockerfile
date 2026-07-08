@@ -8,7 +8,7 @@ COPY apps/server/ apps/server/
 WORKDIR /src/apps/server
 
 ARG CONFIGURATION=Release
-RUN dotnet publish -c $CONFIGURATION -o /app/publish
+RUN dotnet publish -c $CONFIGURATION -o /app/publish -p:RunNSwag=False
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app

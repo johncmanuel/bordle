@@ -72,6 +72,13 @@ namespace Bordle.Server.Services
 
         internal static async Task<Puzzle> CreatePuzzleForGuildAsync(AppDbContext db, DictionaryService dictionaryService, long guildId, DateTime publishDate)
         {
+            // calculate the next sequence number for a guild
+            var maxSequenceNum = await db.Puzzles
+                .Where(p => p.GuildId == guildId)
+                .Select(p => (int?)p.SequenceNumber) // cast to nullable int to handle case where there are no puzzles yet
+                .MaxAsync() ?? 0;
+            var nextSequenceNum = maxSequenceNum + 1;
+
             // find an unused submission from the given guild and check if it exists
             // if not then fall back to the dictionary 
             var unusedSubmission = await db.WordSubmissions
@@ -87,6 +94,7 @@ namespace Bordle.Server.Services
                 {
                     GuildId = guildId,
                     SubmissionId = unusedSubmission.Id,
+                    SequenceNumber = nextSequenceNum,
                     PublishedAt = publishDate,
 #if DEBUG
                     ClosedAt = publishDate.AddMinutes(2),
@@ -104,6 +112,7 @@ namespace Bordle.Server.Services
                 GuildId = guildId,
                 FallbackWord = fallbackWord,
                 GeneratedHints = hints,
+                SequenceNumber = nextSequenceNum,
                 PublishedAt = publishDate,
 #if DEBUG
                 ClosedAt = publishDate.AddMinutes(2),

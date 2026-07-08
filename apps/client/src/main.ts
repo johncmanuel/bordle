@@ -8,6 +8,7 @@ import { PlayersSidebar } from './components/playersSidebar';
 import { setupDiscordSdk, SESSION_TOKEN_KEY } from './discord/init';
 import { getUserAvatar } from './discord/user';
 import { createIcons, Settings, Lightbulb, CirclePlus, Menu, X } from 'lucide';
+import { isEmbedded } from './discord/sdk';
 import { Client } from './api/client';
 
 // TODO: modularize various parts of this file into separate pieces 
@@ -20,6 +21,18 @@ document.body.appendChild(sidebarEl);
 const sidebarOverlay = document.createElement('div');
 sidebarOverlay.className = 'sidebar-overlay';
 document.body.appendChild(sidebarOverlay);
+
+if (isEmbedded) {
+  document.body.classList.add('is-embedded');
+}
+document.body.classList.add('is-connecting');
+
+const connectingOverlay = document.createElement('div');
+connectingOverlay.id = 'connecting-overlay';
+connectingOverlay.innerHTML = `
+  <div style="font-size: 1.2rem; font-weight: bold; color: rgba(255, 255, 255, 0.7);">Connecting...</div>
+`;
+document.body.appendChild(connectingOverlay);
 
 const header = document.createElement('header');
 header.className = 'top-bar';
@@ -71,7 +84,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <game-board></game-board>
   <game-keyboard></game-keyboard>
-  <div id="puzzle-info" style="font-size: 0.8rem; color: #818384; text-align: center; margin-top: 12px; font-weight: bold; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"></div>
+  <div id="puzzle-info" style="display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; font-size: 0.8rem; color: #818384; margin-top: 12px; margin-bottom: 8px; font-weight: bold; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;"></div>
 `;
 
 const submitForm = document.createElement('submit-word-form') as SubmitWordForm;
@@ -152,6 +165,7 @@ hintsForm.addEventListener('hints-close', () => {
 });
 
 setupDiscordSdk().then(async (auth) => {
+  document.body.classList.remove('is-connecting');
   console.log('Discord SDK setup complete');
   const user = auth.user;
   
@@ -186,7 +200,7 @@ setupDiscordSdk().then(async (auth) => {
     const today = new Date().toLocaleDateString(undefined, {
       month: 'long', day: 'numeric', year: 'numeric'
     });
-    puzzleInfo.innerHTML = `No. ${puzzle.puzzleId}<br>${today}`;
+    puzzleInfo.innerHTML = `<span>No. ${puzzle.sequenceNumber}</span><span>&bull;</span><span>${today}</span>`;
 
     new PlayersSidebar(sidebarEl, apiClient, puzzle.puzzleId!);
     new GameApp(board, keyboard, apiClient, puzzle);
@@ -204,6 +218,7 @@ setupDiscordSdk().then(async (auth) => {
     document.body.appendChild(noPuzzleOverlay);
   }
 }).catch((error) => {
+  document.body.classList.remove('is-connecting');
   console.error('Error setting up Discord SDK:', error);
   const failedOverlay = document.createElement('div');
   failedOverlay.className = 'modal-overlay';

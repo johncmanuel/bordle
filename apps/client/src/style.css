@@ -64,18 +64,35 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 48px;
   width: 100%;
   max-width: 500px;
   height: 100%;
-  padding: 16px;
-  margin-top: 60px; 
+  padding: 16px 16px calc(env(safe-area-inset-bottom, 16px) + 32px);
+  margin-top: calc(60px + env(safe-area-inset-top, 0px)); 
+}
+
+@media (max-width: 600px) {
+  body.is-embedded #app {
+    margin-top: 0;
+    padding-top: calc(60px + max(env(safe-area-inset-top, 0px), 54px));
+  }
+
+  body.is-embedded .top-bar {
+    top: max(env(safe-area-inset-top, 0px), 54px);
+  }
+
+
+
+  body.is-embedded game-keyboard {
+    margin-bottom: 16px;
+  }
 }
 
 .top-bar {
   position: absolute;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   left: 0;
   width: 100%;
   height: 60px;
@@ -295,7 +312,15 @@ body {
   background-color: var(--key-bg-absent);
 }
 
-game-board, game-keyboard {
+game-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex: 1;
+}
+
+game-keyboard {
   display: block;
   width: 100%;
 }
@@ -529,7 +554,7 @@ submit-word-form {
   }
 
   #app {
-    padding: 8px;
+    padding: 8px 8px calc(env(safe-area-inset-bottom, 8px) + 12px);
     gap: 16px;
   }
 
@@ -725,4 +750,25 @@ submit-word-form {
   #profile {
     display: none !important;
   }
+
+  body.is-connecting #connecting-overlay {
+    display: flex;
+  }
+
+  body.is-connecting #app {
+    display: none !important;
+  }
+}
+
+#connecting-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-primary);
+  z-index: 5;
+  align-items: center;
+  justify-content: center;
 }

@@ -317,6 +317,7 @@ export interface SubmitWordRequest {
 
 export interface DailyPuzzleResponse {
     puzzleId?: number;
+    sequenceNumber?: number;
     hints?: string[];
     guesses?: GuessResult[];
     isFinished?: boolean;
