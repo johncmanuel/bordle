@@ -1,19 +1,34 @@
-import type { TTLDiscordUserEntry } from '../types/discord';
+import type { TTLDiscordUserEntry, DiscordUser} from '../types/discord';
 import { baseDiscordCDNUrl } from './init';
 import { discordSDK } from './sdk';
 
-export function getUserAvatar(user: { id: string; avatar?: string | null }): string {
-  let avatarUrl = '';
-  if (user.avatar != null) {
-    avatarUrl = `${baseDiscordCDNUrl}/avatars/${user.id}/${user.avatar}.webp`;
-  } else {
-    // "In the case of the Default User Avatar endpoint, the value for index depends on whether the user 
-    // is migrated to the new username system. For users on the new username system, index will be (user_id >> 22) % 6.
-    // For users on the legacy username system, index will be discriminator % 5."
-    const defaultAvatarIndex = Math.abs(Number(user.id) >> 22) % 6 || 0;
-    avatarUrl = `${baseDiscordCDNUrl}/embed/avatars/${defaultAvatarIndex}.webp`;
+// "In the case of the Default User Avatar endpoint, the value for index depends on whether the user 
+// is migrated to the new username system. For users on the new username system, index will be (user_id >> 22) % 6.
+// For users on the legacy username system, index will be discriminator % 5."
+// https://docs.discord.com/developers/reference#image-formatting
+function getDefaultAvatarIndex(id: DiscordUser['id'], discriminator: DiscordUser['discriminator']): number {
+  // legacy username system 
+  if (discriminator && discriminator !== "0") {
+    return Number(discriminator) % 5;
   }
-  return avatarUrl;
+
+  // migrated / new username system
+  return Number((BigInt(id) >> 22n) % 6n); 
+}
+
+export function getUserAvatar(user: DiscordUser): string {
+  if (user.avatar != null) {
+    // "In the case of endpoints that support GIFs, the hash will begin with a_ if it is available in an animated format
+    // (example: a_1269e74af4df7417b13759eae50c83dc). These images can be retrieved as animated WebP using the .webp file 
+    // extension and ?animated=true querystring parameter."
+    // https://docs.discord.com/developers/reference#image-formatting
+    const isAnimated = user.avatar.startsWith('a_');
+    const url = `${baseDiscordCDNUrl}/avatars/${user.id}/${user.avatar}.webp` 
+    return isAnimated ? `${url}?animated=true` : url;
+  } else {
+    const defaultAvatarIndex = getDefaultAvatarIndex(user.id, user.discriminator);
+    return `${baseDiscordCDNUrl}/embed/avatars/${defaultAvatarIndex}.png`; // default user avatar is PNG only
+  }
 }
 
 const TTL_MS = 10 * 60 * 1000;

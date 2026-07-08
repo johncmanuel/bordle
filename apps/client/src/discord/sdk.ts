@@ -35,11 +35,27 @@ if (isEmbedded) {
       return currentStoredValue;
     }
 
-    // Set queryParam to a random 8-character string
-    const randomString = Math.random().toString(36).slice(2, 10);
-    sessionStorage.setItem(queryParam, randomString);
+    // Set queryParam to a mock Discord snowflake
+    // https://docs.discord.com/developers/reference#snowflakes
+    //
+    // A Discord Snowflake is a 64-bit integer that is composed of several parts:
+    // 1. Timestamp (42 bits): Milliseconds since the Discord Epoch (the first second of 2015).
+    // 2. Worker ID (5 bits): Internal Discord worker ID.
+    // 3. Process ID (5 bits): Internal Discord process ID.
+    // 4. Increment (12 bits): For every ID generated on that process, this number is incremented.
+    //
+    // Data contained within the snowflake like worker id isn't relevant for mocks
+    // but it's good to know where it's coming from tbh.
+    const discordEpoch = 1420070400000n; // first second of 2015
+    const timestamp = BigInt(Date.now()) - discordEpoch;
+    // 2^22 is composed of the last 3 components of the snowflake (worker id, process id, increment)
+    // (5 bits + 5 bits + 12 bits = 22 bits)
+    const randomBits = BigInt(Math.floor(Math.random() * (2**22))); 
+    const mockSnowflake = ((timestamp << 22n) | randomBits).toString(); // timestamp occupies the first 42 bits, the rest of the bits (22) is random 
+    
+    sessionStorage.setItem(queryParam, mockSnowflake);
 
-    return randomString;
+    return mockSnowflake;
   }
 
   const mockUserId = getOverrideOrRandomSessionValue("user_id");
@@ -54,7 +70,7 @@ if (isEmbedded) {
       return {
         access_token: "mock_token",
         user: {
-          username: mockUserId,
+          username: mockUserId.slice(0, 8),
           discriminator,
           id: mockUserId,
           avatar: null,
