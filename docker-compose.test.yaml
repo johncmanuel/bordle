@@ -35,6 +35,8 @@ services:
       dockerfile: apps/client/Dockerfile
       args:
         - VITE_DISCORD_CLIENT_ID=${VITE_DISCORD_CLIENT_ID}
+    env_file:
+      - .env.test
     container_name: bordle_client_test
     restart: always
     ports:
