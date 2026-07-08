@@ -13,7 +13,7 @@ function getDefaultAvatarIndex(id: string, discriminator?: string): number {
   }
 
   // migrated / new username system
-  return Number((BigInt(id) >> 22n) % 6n); 
+  return Number((BigInt(id) >> BigInt(22)) % BigInt(6)); 
 }
 
 export function getUserAvatar(user: Pick<DiscordUser, 'id'> & Partial<Pick<DiscordUser, 'avatar' | 'discriminator'>>): string {
