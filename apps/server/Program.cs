@@ -82,6 +82,12 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 var dictionaryService = app.Services.GetRequiredService<DictionaryService>();
 await dictionaryService.InitializeAsync();
 
