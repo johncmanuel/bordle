@@ -6,7 +6,7 @@ import { discordSDK } from './sdk';
 // is migrated to the new username system. For users on the new username system, index will be (user_id >> 22) % 6.
 // For users on the legacy username system, index will be discriminator % 5."
 // https://docs.discord.com/developers/reference#image-formatting
-function getDefaultAvatarIndex(id: DiscordUser['id'], discriminator: DiscordUser['discriminator']): number {
+function getDefaultAvatarIndex(id: string, discriminator?: string): number {
   // legacy username system 
   if (discriminator && discriminator !== "0") {
     return Number(discriminator) % 5;
@@ -16,7 +16,7 @@ function getDefaultAvatarIndex(id: DiscordUser['id'], discriminator: DiscordUser
   return Number((BigInt(id) >> 22n) % 6n); 
 }
 
-export function getUserAvatar(user: DiscordUser): string {
+export function getUserAvatar(user: Pick<DiscordUser, 'id'> & Partial<Pick<DiscordUser, 'avatar' | 'discriminator'>>): string {
   if (user.avatar != null) {
     // "In the case of endpoints that support GIFs, the hash will begin with a_ if it is available in an animated format
     // (example: a_1269e74af4df7417b13759eae50c83dc). These images can be retrieved as animated WebP using the .webp file 
