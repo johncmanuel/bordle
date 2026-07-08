@@ -599,6 +599,8 @@ submit-word-form {
   padding: 16px;
   gap: 12px;
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
   transition: transform 0.25s ease;
 }
 
@@ -606,6 +608,14 @@ submit-word-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+#players-sidebar::-webkit-scrollbar,
+.players-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 .players-empty {
