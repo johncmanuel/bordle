@@ -16,6 +16,7 @@ function getDefaultAvatarIndex(id: string, discriminator?: string): number {
   return Number((BigInt(id) >> BigInt(22)) % BigInt(6)); 
 }
 
+// Returns the CDN URL for a user's avatar. If the user has no avatar, returns the default avatar URL
 export function getUserAvatar(user: Pick<DiscordUser, 'id'> & Partial<Pick<DiscordUser, 'avatar' | 'discriminator'>>): string {
   if (user.avatar != null) {
     // "In the case of endpoints that support GIFs, the hash will begin with a_ if it is available in an animated format
@@ -24,6 +25,7 @@ export function getUserAvatar(user: Pick<DiscordUser, 'id'> & Partial<Pick<Disco
     // https://docs.discord.com/developers/reference#image-formatting
     const isAnimated = user.avatar.startsWith('a_');
     const url = `${baseDiscordCDNUrl}/avatars/${user.id}/${user.avatar}.webp` 
+    console.log("avatar url: ", url, "isAnimated: ", isAnimated);
     return isAnimated ? `${url}?animated=true` : url;
   } else {
     const defaultAvatarIndex = getDefaultAvatarIndex(user.id, user.discriminator);
