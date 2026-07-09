@@ -1,9 +1,9 @@
-import type { KeyState } from '../types/state';
+import type { KeyState } from "../types/state";
 
 const ROWS = [
-  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE'],
+  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+  ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACKSPACE"],
 ];
 
 const STATE_PRIORITY: Record<string, number> = {
@@ -24,34 +24,34 @@ export class GameKeyboard extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    document.addEventListener('keydown', this.boundKeyHandler);
+    document.addEventListener("keydown", this.boundKeyHandler);
   }
 
   disconnectedCallback() {
-    document.removeEventListener('keydown', this.boundKeyHandler);
+    document.removeEventListener("keydown", this.boundKeyHandler);
   }
 
   private render() {
-    const keyboard = document.createElement('div');
-    keyboard.classList.add('keyboard');
+    const keyboard = document.createElement("div");
+    keyboard.classList.add("keyboard");
 
     for (const row of ROWS) {
-      const rowEl = document.createElement('div');
-      rowEl.classList.add('keyboard-row');
+      const rowEl = document.createElement("div");
+      rowEl.classList.add("keyboard-row");
 
       for (const key of row) {
-        const btn = document.createElement('button');
-        btn.classList.add('key');
+        const btn = document.createElement("button");
+        btn.classList.add("key");
         btn.dataset.key = key;
 
-        if (key === 'ENTER' || key === 'BACKSPACE') {
-          btn.classList.add('wide');
-          btn.textContent = key === 'BACKSPACE' ? '⌫' : 'ENTER';
+        if (key === "ENTER" || key === "BACKSPACE") {
+          btn.classList.add("wide");
+          btn.textContent = key === "BACKSPACE" ? "⌫" : "ENTER";
         } else {
           btn.textContent = key;
         }
 
-        btn.addEventListener('pointerup', () => {
+        btn.addEventListener("pointerup", () => {
           this.emitKey(key);
         });
 
@@ -69,17 +69,17 @@ export class GameKeyboard extends HTMLElement {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.repeat) return;
 
-    // Ignore keystrokes if the user is typing somewhere else like an input field 
+    // Ignore keystrokes if the user is typing somewhere else like an input field
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
       return;
     }
 
     const key = e.key.toUpperCase();
 
-    if (key === 'ENTER') {
-      this.emitKey('ENTER');
-    } else if (key === 'BACKSPACE') {
-      this.emitKey('BACKSPACE');
+    if (key === "ENTER") {
+      this.emitKey("ENTER");
+    } else if (key === "BACKSPACE") {
+      this.emitKey("BACKSPACE");
     } else if (/^[A-Z]$/.test(key)) {
       // allow only A-Z letters
       this.emitKey(key);
@@ -88,11 +88,11 @@ export class GameKeyboard extends HTMLElement {
 
   private emitKey(key: string) {
     this.dispatchEvent(
-      new CustomEvent('key-pressed', {
+      new CustomEvent("key-pressed", {
         detail: { key },
         bubbles: true,
         composed: true,
-      })
+      }),
     );
   }
 
@@ -104,11 +104,8 @@ export class GameKeyboard extends HTMLElement {
     const currentState = this.keyStates.get(key);
 
     // do not downgrade to previous state (correct > present > absent)
-    if (
-      currentState &&
-      STATE_PRIORITY[currentState] >= STATE_PRIORITY[state]
-    ) {
-      return; 
+    if (currentState && STATE_PRIORITY[currentState] >= STATE_PRIORITY[state]) {
+      return;
     }
 
     this.keyStates.set(key, state);
@@ -123,4 +120,4 @@ export class GameKeyboard extends HTMLElement {
   }
 }
 
-customElements.define('game-keyboard', GameKeyboard);
+customElements.define("game-keyboard", GameKeyboard);

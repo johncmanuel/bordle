@@ -1,30 +1,32 @@
-import type { TTLDiscordUserEntry, DiscordUser} from '../types/discord';
-import { baseDiscordCDNUrl } from './init';
-import { discordSDK } from './sdk';
+import type { TTLDiscordUserEntry, DiscordUser } from "../types/discord";
+import { baseDiscordCDNUrl } from "./init";
+import { discordSDK } from "./sdk";
 
-// "In the case of the Default User Avatar endpoint, the value for index depends on whether the user 
+// "In the case of the Default User Avatar endpoint, the value for index depends on whether the user
 // is migrated to the new username system. For users on the new username system, index will be (user_id >> 22) % 6.
 // For users on the legacy username system, index will be discriminator % 5."
 // https://docs.discord.com/developers/reference#image-formatting
 function getDefaultAvatarIndex(id: string, discriminator?: string): number {
-  // legacy username system 
+  // legacy username system
   if (discriminator && discriminator !== "0") {
     return Number(discriminator) % 5;
   }
 
   // migrated / new username system
-  return Number((BigInt(id) >> BigInt(22)) % BigInt(6)); 
+  return Number((BigInt(id) >> BigInt(22)) % BigInt(6));
 }
 
 // Returns the CDN URL for a user's avatar. If the user has no avatar, returns the default avatar URL
-export function getUserAvatar(user: Pick<DiscordUser, 'id'> & Partial<Pick<DiscordUser, 'avatar' | 'discriminator'>>): string {
+export function getUserAvatar(
+  user: Pick<DiscordUser, "id"> & Partial<Pick<DiscordUser, "avatar" | "discriminator">>,
+): string {
   if (user.avatar != null) {
     // "In the case of endpoints that support GIFs, the hash will begin with a_ if it is available in an animated format
-    // (example: a_1269e74af4df7417b13759eae50c83dc). These images can be retrieved as animated WebP using the .webp file 
+    // (example: a_1269e74af4df7417b13759eae50c83dc). These images can be retrieved as animated WebP using the .webp file
     // extension and ?animated=true querystring parameter."
     // https://docs.discord.com/developers/reference#image-formatting
-    const isAnimated = user.avatar.startsWith('a_');
-    const url = `${baseDiscordCDNUrl}/avatars/${user.id}/${user.avatar}.webp` 
+    const isAnimated = user.avatar.startsWith("a_");
+    const url = `${baseDiscordCDNUrl}/avatars/${user.id}/${user.avatar}.webp`;
     console.log("avatar url: ", url, "isAnimated: ", isAnimated);
     return isAnimated ? `${url}?animated=true` : url;
   } else {
@@ -49,10 +51,10 @@ export async function getDiscordUsername(userId: string): Promise<string> {
     if (!response) throw new Error(`No response from Discord SDK for user ID: ${userId}`);
 
     const username = response.username;
-    
+
     usernameCache.set(userId, {
       username,
-      expiresAt: now + TTL_MS
+      expiresAt: now + TTL_MS,
     });
 
     return username;

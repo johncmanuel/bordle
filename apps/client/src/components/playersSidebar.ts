@@ -1,5 +1,5 @@
-import type { Client } from '../api/client';
-import { getUserAvatar } from '../discord/user';
+import type { Client } from "../api/client";
+import { getUserAvatar } from "../discord/user";
 
 export class PlayersSidebar {
   private container: HTMLElement;
@@ -12,7 +12,7 @@ export class PlayersSidebar {
     this.apiClient = apiClient;
     this.puzzleId = puzzleId;
 
-    this.listEl = this.container.querySelector('.players-list')!;
+    this.listEl = this.container.querySelector(".players-list")!;
 
     this.refresh();
   }
@@ -36,63 +36,61 @@ export class PlayersSidebar {
             username: "Bob",
             avatarUrl: getUserAvatar({ id: "123456789" }),
             guessStates: [
-              ['absent', 'present', 'absent', 'absent', 'absent'],
-              ['absent', 'absent', 'correct', 'present', 'correct']
-            ]
+              ["absent", "present", "absent", "absent", "absent"],
+              ["absent", "absent", "correct", "present", "correct"],
+            ],
           },
           {
             username: "AliceTheGreat",
             avatarUrl: getUserAvatar({ id: "987654321" }),
             guessStates: [
-              ['absent', 'absent', 'absent', 'absent', 'absent'],
-              ['present', 'present', 'present', 'absent', 'absent'],
-              ['correct', 'correct', 'correct', 'correct', 'correct']
-            ]
+              ["absent", "absent", "absent", "absent", "absent"],
+              ["present", "present", "present", "absent", "absent"],
+              ["correct", "correct", "correct", "correct", "correct"],
+            ],
           },
           {
             username: "Charlie",
             avatarUrl: getUserAvatar({ id: "111222333" }),
-            guessStates: [
-              ['absent', 'absent', 'absent', 'absent', 'absent']
-            ]
-          }
+            guessStates: [["absent", "absent", "absent", "absent", "absent"]],
+          },
         );
       }
 
-      this.listEl.innerHTML = '';
+      this.listEl.innerHTML = "";
 
       if (playerEntries.length === 0) {
         this.listEl.innerHTML = '<div class="players-empty">No players found.</div>';
         return;
       }
 
-      this.listEl.innerHTML = '';
+      this.listEl.innerHTML = "";
 
       for (const entry of playerEntries) {
-        const row = document.createElement('div');
-        row.className = 'player-row';
+        const row = document.createElement("div");
+        row.className = "player-row";
 
-        const profileEl = document.createElement('div');
-        profileEl.className = 'player-profile';
-        
-        const avatarEl = document.createElement('img');
-        avatarEl.className = 'player-avatar';
+        const profileEl = document.createElement("div");
+        profileEl.className = "player-profile";
+
+        const avatarEl = document.createElement("img");
+        avatarEl.className = "player-avatar";
         avatarEl.src = entry.avatarUrl;
-        avatarEl.alt = entry.username ? `${entry.username}'s avatar` : 'Discord avatar';
+        avatarEl.alt = entry.username ? `${entry.username}'s avatar` : "Discord avatar";
         profileEl.appendChild(avatarEl);
-        
+
         row.appendChild(profileEl);
 
-        const gridEl = document.createElement('div');
-        gridEl.className = 'mini-grid';
+        const gridEl = document.createElement("div");
+        gridEl.className = "mini-grid";
 
         for (let i = 0; i < 6; i++) {
-          const rowEl = document.createElement('div');
-          rowEl.className = 'mini-row';
+          const rowEl = document.createElement("div");
+          rowEl.className = "mini-row";
           const guessRow = entry.guessStates[i] || [];
           for (let j = 0; j < 5; j++) {
-            const state = guessRow[j] || 'empty';
-            const tile = document.createElement('div');
+            const state = guessRow[j] || "empty";
+            const tile = document.createElement("div");
             tile.className = `mini-tile mini-tile-${state}`;
             rowEl.appendChild(tile);
           }
@@ -103,7 +101,7 @@ export class PlayersSidebar {
         this.listEl.appendChild(row);
       }
     } catch (err) {
-      console.error('Failed to fetch players:', err);
+      console.error("Failed to fetch players:", err);
       this.listEl.innerHTML = '<div class="players-empty">Failed to load players.</div>';
     }
   }

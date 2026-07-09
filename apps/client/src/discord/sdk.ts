@@ -1,7 +1,7 @@
 // very useful reference for Discord SDK usage:
 // https://github.com/colyseus/discord-activity/blob/main/apps/client/src/utils/DiscordSDK.ts
 
-import { DiscordSDK, DiscordSDKMock } from '@discord/embedded-app-sdk';
+import { DiscordSDK, DiscordSDKMock } from "@discord/embedded-app-sdk";
 
 const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID;
 
@@ -50,9 +50,9 @@ if (isEmbedded) {
     const timestamp = BigInt(Date.now()) - discordEpoch;
     // 2^22 is composed of the last 3 components of the snowflake (worker id, process id, increment)
     // (5 bits + 5 bits + 12 bits = 22 bits)
-    const randomBits = BigInt(Math.floor(Math.random() * (2**22))); 
-    const mockSnowflake = ((timestamp << BigInt(22)) | randomBits).toString(); // timestamp occupies the first 42 bits, the rest of the bits (22) is random 
-    
+    const randomBits = BigInt(Math.floor(Math.random() * 2 ** 22));
+    const mockSnowflake = ((timestamp << BigInt(22)) | randomBits).toString(); // timestamp occupies the first 42 bits, the rest of the bits (22) is random
+
     sessionStorage.setItem(queryParam, mockSnowflake);
 
     return mockSnowflake;

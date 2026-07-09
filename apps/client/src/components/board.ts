@@ -1,4 +1,4 @@
-import type {KeyState} from "../types/state"
+import type { KeyState } from "../types/state";
 
 const MAX_ROWS = 6;
 const MAX_COLS = 5;
@@ -18,14 +18,14 @@ export class GameBoard extends HTMLElement {
   }
 
   private render() {
-    const board = document.createElement('div');
-    board.classList.add('board');
+    const board = document.createElement("div");
+    board.classList.add("board");
 
     for (let r = 0; r < MAX_ROWS; r++) {
       const row: HTMLDivElement[] = [];
       for (let c = 0; c < MAX_COLS; c++) {
-        const tile = document.createElement('div');
-        tile.classList.add('tile');
+        const tile = document.createElement("div");
+        tile.classList.add("tile");
         tile.dataset.row = String(r);
         tile.dataset.col = String(c);
         board.appendChild(tile);
@@ -42,12 +42,12 @@ export class GameBoard extends HTMLElement {
 
     const tile = this.tiles[this.currRow][this.currCol];
     tile.textContent = letter.toUpperCase();
-    tile.dataset.state = 'tbd';
+    tile.dataset.state = "tbd";
 
     // play pop animation then force reflow so the animation replays if called rapidly
-    tile.classList.remove('pop');
+    tile.classList.remove("pop");
     void tile.offsetWidth;
-    tile.classList.add('pop');
+    tile.classList.add("pop");
 
     this.currCol++;
   }
@@ -58,15 +58,13 @@ export class GameBoard extends HTMLElement {
     this.currCol--;
 
     const tile = this.tiles[this.currRow][this.currCol];
-    tile.textContent = '';
+    tile.textContent = "";
     delete tile.dataset.state;
-    tile.classList.remove('pop');
+    tile.classList.remove("pop");
   }
 
   getCurrentGuess(): string {
-    return this.tiles[this.currRow]
-      .map(t => t.textContent ?? '')
-      .join('');
+    return this.tiles[this.currRow].map((t) => t.textContent ?? "").join("");
   }
 
   isRowFull(): boolean {
@@ -80,40 +78,40 @@ export class GameBoard extends HTMLElement {
   // shakes the current row to indicate an invalid guess
   shakeCurrentRow() {
     const row = this.tiles[this.currRow];
-    const board = this.querySelector('.board')!;
-    
-    board.classList.remove('row-shake');
+    const board = this.querySelector(".board")!;
+
+    board.classList.remove("row-shake");
     void (board as HTMLElement).offsetWidth;
-    
-    row.forEach(tile => {
-      tile.style.animation = 'none';
+
+    row.forEach((tile) => {
+      tile.style.animation = "none";
       void tile.offsetWidth;
-      tile.style.animation = 'shake 250ms ease-in-out';
+      tile.style.animation = "shake 250ms ease-in-out";
     });
 
     setTimeout(() => {
-      row.forEach(tile => {
-        tile.style.animation = '';
+      row.forEach((tile) => {
+        tile.style.animation = "";
       });
     }, 300);
   }
 
   sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async revealTile(tile: HTMLElement, state: KeyState, delayMs: number): Promise<void> {
     const flipHalfMs = 250;
     await this.sleep(delayMs);
-    tile.classList.add('flip-in');
+    tile.classList.add("flip-in");
 
     await this.sleep(flipHalfMs);
-    tile.classList.remove('flip-in');
+    tile.classList.remove("flip-in");
     tile.dataset.state = state;
-    tile.classList.add('flip-out');
+    tile.classList.add("flip-out");
 
     await this.sleep(flipHalfMs);
-    tile.classList.remove('flip-out');
+    tile.classList.remove("flip-out");
   }
 
   async revealRow(pattern: KeyState[]): Promise<void> {
@@ -122,11 +120,9 @@ export class GameBoard extends HTMLElement {
     const row = this.tiles[this.currRow];
     const staggerMs = 300;
 
-    await Promise.all(
-      row.map((tile, i) => this.revealTile(tile, pattern[i], i * staggerMs))
-    );
+    await Promise.all(row.map((tile, i) => this.revealTile(tile, pattern[i], i * staggerMs)));
 
-    const won = pattern.every(s => s === 'correct');
+    const won = pattern.every((s) => s === "correct");
     this.currRow++;
     this.currCol = 0;
     if (won || this.currRow >= MAX_ROWS) {
@@ -144,7 +140,7 @@ export class GameBoard extends HTMLElement {
       row[i].dataset.state = pattern[i];
     }
 
-    const won = pattern.every(s => s === 'correct');
+    const won = pattern.every((s) => s === "correct");
     this.currRow++;
     this.currCol = 0;
     if (won || this.currRow >= MAX_ROWS) {
@@ -159,13 +155,13 @@ export class GameBoard extends HTMLElement {
 
     for (const row of this.tiles) {
       for (const tile of row) {
-        tile.textContent = '';
+        tile.textContent = "";
         delete tile.dataset.state;
-        tile.classList.remove('pop', 'flip-in', 'flip-out');
-        tile.style.animation = '';
+        tile.classList.remove("pop", "flip-in", "flip-out");
+        tile.style.animation = "";
       }
     }
   }
 }
 
-customElements.define('game-board', GameBoard);
+customElements.define("game-board", GameBoard);

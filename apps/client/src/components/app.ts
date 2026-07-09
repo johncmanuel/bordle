@@ -1,8 +1,7 @@
-import { GameBoard } from './board';
-import type { GameKeyboard } from './keyboard';
-import type { KeyState } from '../types/state';
-import type { Client, DailyPuzzleResponse } from '../api/client';
-
+import { GameBoard } from "./board";
+import type { GameKeyboard } from "./keyboard";
+import type { KeyState } from "../types/state";
+import type { Client, DailyPuzzleResponse } from "../api/client";
 
 export class GameApp {
   private board: GameBoard;
@@ -10,13 +9,18 @@ export class GameApp {
   private apiClient: Client;
   private puzzleId: number;
 
-  constructor(board: GameBoard, keyboard: GameKeyboard, apiClient: Client, puzzle: DailyPuzzleResponse) {
+  constructor(
+    board: GameBoard,
+    keyboard: GameKeyboard,
+    apiClient: Client,
+    puzzle: DailyPuzzleResponse,
+  ) {
     this.board = board;
     this.keyboard = keyboard;
     this.apiClient = apiClient;
     this.puzzleId = puzzle.puzzle_id!;
 
-    this.keyboard.addEventListener('key-pressed', this.handleKeyPress.bind(this) as EventListener);
+    this.keyboard.addEventListener("key-pressed", this.handleKeyPress.bind(this) as EventListener);
 
     this.restoreExistingGuesses(puzzle);
 
@@ -49,9 +53,9 @@ export class GameApp {
 
     if (this.board.isGameOver()) return;
 
-    if (key === 'BACKSPACE') {
+    if (key === "BACKSPACE") {
       this.board.removeLetter();
-    } else if (key === 'ENTER') {
+    } else if (key === "ENTER") {
       if (!this.board.isRowFull()) {
         this.board.shakeCurrentRow();
         return;
@@ -71,13 +75,15 @@ export class GameApp {
 
         if (result.is_finished) {
           // wait for reveal animation to finish before showing toast
-          setTimeout(() => {
-            this.handleGameOver(result.answer!, result.author_username);
-          }, 300 * 5 + 500); 
+          setTimeout(
+            () => {
+              this.handleGameOver(result.answer!, result.author_username);
+            },
+            300 * 5 + 500,
+          );
         }
-
       } catch (err) {
-        console.error('Guess rejected:', err);
+        console.error("Guess rejected:", err);
         this.board.shakeCurrentRow();
       }
     } else {
@@ -92,17 +98,17 @@ export class GameApp {
   }
 
   private showToast(message: string) {
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification';
+    const toast = document.createElement("div");
+    toast.className = "toast-notification";
     toast.textContent = message;
     document.body.appendChild(toast);
 
     setTimeout(() => {
-      toast.classList.add('show');
+      toast.classList.add("show");
     }, 100);
 
     const hideToast = () => {
-      toast.classList.remove('show');
+      toast.classList.remove("show");
       setTimeout(() => {
         if (document.body.contains(toast)) {
           document.body.removeChild(toast);
@@ -112,7 +118,7 @@ export class GameApp {
 
     const autoHideTimeout = setTimeout(hideToast, 5000);
 
-    toast.addEventListener('click', () => {
+    toast.addEventListener("click", () => {
       clearTimeout(autoHideTimeout);
       hideToast();
     });

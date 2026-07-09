@@ -1,2 +1,1 @@
-
-export type KeyState = 'correct' | 'present' | 'absent';
+export type KeyState = "correct" | "present" | "absent";

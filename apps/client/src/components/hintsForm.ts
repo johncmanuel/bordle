@@ -1,6 +1,6 @@
-import { createIcons, X } from 'lucide';
+import { createIcons, X } from "lucide";
 
-const template = document.createElement('template');
+const template = document.createElement("template");
 template.innerHTML = `
   <div class="modal-overlay">
     <div class="modal-content">
@@ -25,31 +25,31 @@ export class HintsForm extends HTMLElement {
 
     createIcons({
       root: this,
-      icons: { X }
+      icons: { X },
     });
 
-    this.closeBtn = this.querySelector('.close-btn')!;
-    this.overlay = this.querySelector('.modal-overlay')!;
-    this.hintsContainer = this.querySelector('#hints-container')!;
+    this.closeBtn = this.querySelector(".close-btn")!;
+    this.overlay = this.querySelector(".modal-overlay")!;
+    this.hintsContainer = this.querySelector("#hints-container")!;
 
     const closeHandler = () => {
-      this.dispatchEvent(new CustomEvent('hints-close', { bubbles: true }));
+      this.dispatchEvent(new CustomEvent("hints-close", { bubbles: true }));
     };
-    
-    this.closeBtn.addEventListener('click', closeHandler);
-    this.overlay.addEventListener('click', (e) => {
+
+    this.closeBtn.addEventListener("click", closeHandler);
+    this.overlay.addEventListener("click", (e) => {
       if (e.target === this.overlay) closeHandler();
     });
   }
 
   public setHints(hints: string[], puzzleId: number) {
-    this.hintsContainer.innerHTML = '';
+    this.hintsContainer.innerHTML = "";
 
     if (!hints || hints.length === 0) {
-      const p = document.createElement('p');
-      p.className = 'subtitle'; 
-      p.style.textAlign = 'center';
-      p.textContent = 'No hints available!';
+      const p = document.createElement("p");
+      p.className = "subtitle";
+      p.style.textAlign = "center";
+      p.textContent = "No hints available!";
       this.hintsContainer.appendChild(p);
       return;
     }
@@ -59,42 +59,42 @@ export class HintsForm extends HTMLElement {
     const revealedHints: number[] = revealedHintsStr ? JSON.parse(revealedHintsStr) : [];
 
     hints.forEach((hint, index) => {
-      const hintEl = document.createElement('div');
-      hintEl.style.padding = '12px';
-      hintEl.style.backgroundColor = '#3a3a3c';
-      hintEl.style.borderRadius = '8px';
-      hintEl.style.color = '#fff';
-      hintEl.style.fontWeight = 'bold';
-      hintEl.style.fontSize = '1.1rem';
-      hintEl.style.cursor = 'pointer';
-      hintEl.style.userSelect = 'none';
-      
-      const numSpan = document.createElement('span');
-      numSpan.style.color = '#818384';
-      numSpan.style.marginRight = '8px';
+      const hintEl = document.createElement("div");
+      hintEl.style.padding = "12px";
+      hintEl.style.backgroundColor = "#3a3a3c";
+      hintEl.style.borderRadius = "8px";
+      hintEl.style.color = "#fff";
+      hintEl.style.fontWeight = "bold";
+      hintEl.style.fontSize = "1.1rem";
+      hintEl.style.cursor = "pointer";
+      hintEl.style.userSelect = "none";
+
+      const numSpan = document.createElement("span");
+      numSpan.style.color = "#818384";
+      numSpan.style.marginRight = "8px";
       numSpan.textContent = `${index + 1}.`;
-      
-      const contentSpan = document.createElement('span');
-      
+
+      const contentSpan = document.createElement("span");
+
       const isRevealed = revealedHints.includes(index);
       if (isRevealed) {
         contentSpan.textContent = hint;
       } else {
-        contentSpan.textContent = 'Tap to reveal hint';
-        contentSpan.style.fontStyle = 'italic';
-        contentSpan.style.color = '#818384';
+        contentSpan.textContent = "Tap to reveal hint";
+        contentSpan.style.fontStyle = "italic";
+        contentSpan.style.color = "#818384";
       }
-      
+
       hintEl.appendChild(numSpan);
       hintEl.appendChild(contentSpan);
 
-      hintEl.addEventListener('click', () => {
+      hintEl.addEventListener("click", () => {
         if (!revealedHints.includes(index)) {
           revealedHints.push(index);
           sessionStorage.setItem(stateKey, JSON.stringify(revealedHints));
           contentSpan.textContent = hint;
-          contentSpan.style.fontStyle = 'normal';
-          contentSpan.style.color = '#fff';
+          contentSpan.style.fontStyle = "normal";
+          contentSpan.style.color = "#fff";
         }
       });
 
@@ -103,4 +103,4 @@ export class HintsForm extends HTMLElement {
   }
 }
 
-customElements.define('hints-form', HintsForm);
+customElements.define("hints-form", HintsForm);

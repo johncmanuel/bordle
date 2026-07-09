@@ -45,7 +45,8 @@
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -54,7 +55,7 @@ html, body {
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: "Helvetica Neue", Arial, sans-serif;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -70,7 +71,7 @@ body {
   max-width: 500px;
   height: 100%;
   padding: 16px 16px calc(env(safe-area-inset-bottom, 16px) + 32px);
-  margin-top: calc(60px + env(safe-area-inset-top, 0px)); 
+  margin-top: calc(60px + env(safe-area-inset-top, 0px));
 }
 
 @media (max-width: 600px) {
@@ -82,8 +83,6 @@ body {
   body.is-embedded .top-bar {
     top: max(env(safe-area-inset-top, 0px), 54px);
   }
-
-
 
   body.is-embedded game-keyboard {
     margin-bottom: 16px;
@@ -106,7 +105,7 @@ body {
 }
 
 .top-bar-title {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: "Times New Roman", Times, serif;
   font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -143,7 +142,9 @@ body {
   cursor: pointer;
   width: 24px;
   height: 24px;
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 
 .icon-btn:hover {
@@ -244,9 +245,19 @@ body {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 50%, 90% { transform: translateX(-4px); }
-  30%, 70% { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  50%,
+  90% {
+    transform: translateX(-4px);
+  }
+  30%,
+  70% {
+    transform: translateX(4px);
+  }
 }
 
 .row-shake {
@@ -341,13 +352,21 @@ submit-word-form {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes slideUpFade {
@@ -455,7 +474,9 @@ submit-word-form {
   color: var(--text-primary);
   font-family: inherit;
   outline: none;
-  transition: border-color 200ms ease, background 200ms ease;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease;
 }
 
 .submit-field input:focus {
@@ -504,7 +525,10 @@ submit-word-form {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 150ms ease, transform 100ms ease, opacity 150ms ease;
+  transition:
+    background-color 150ms ease,
+    transform 100ms ease,
+    opacity 150ms ease;
 }
 
 .btn:active {
@@ -525,12 +549,9 @@ submit-word-form {
   background: #45a049;
 }
 
-
-
 .view-hidden {
   display: none !important;
 }
-
 
 @media (max-height: 700px) {
   :root {
@@ -562,7 +583,6 @@ submit-word-form {
     padding: 20px 16px;
   }
 }
-
 
 .toast-notification {
   position: absolute;
@@ -600,7 +620,7 @@ submit-word-form {
   gap: 12px;
   overflow-y: auto;
   scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
+  -ms-overflow-style: none; /* IE and Edge */
   transition: transform 0.25s ease;
 }
 
@@ -610,7 +630,7 @@ submit-word-form {
   gap: 12px;
   overflow-y: auto;
   scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 #players-sidebar::-webkit-scrollbar,
