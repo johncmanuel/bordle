@@ -5,3 +5,6 @@
 # env files
 .env
 .env.test
+
+# node dependencies
+**/node_modules/**
