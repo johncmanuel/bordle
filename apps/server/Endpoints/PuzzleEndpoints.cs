@@ -70,7 +70,7 @@ public static class PuzzleEndpoints
                 .Include(p => p.Submission)
                 .ThenInclude(s => s!.User)
                 .FirstOrDefaultAsync(p => p.Id == puzzle.Id);
-                
+
             if (puzzle is null)
             {
                 return TypedResults.NotFound("Failed to generate puzzle.");
