@@ -82,12 +82,17 @@ public static class DiscordEndpoints
 
         if (!long.TryParse(req.GuildId, out var parsedGuildId))
         {
-            return TypedResults.BadRequest("Invalid GuildId.");
+            return TypedResults.BadRequest("Invalid info.");
         }
 
-        await UpsertUserAndGuild(db, long.Parse(discordUser.Id), discordUser.Username, discordUser.Avatar, parsedGuildId);
+        if (!long.TryParse(discordUser.Id, out var parsedUserId))
+        {
+            return TypedResults.BadRequest("Invalid info.");
+        }
 
-        var sessionToken = jwtService.GenerateToken(long.Parse(discordUser.Id), parsedGuildId);
+        await UpsertUserAndGuild(db, parsedUserId, discordUser.Username, discordUser.Avatar, parsedGuildId);
+
+        var sessionToken = jwtService.GenerateToken(parsedUserId, parsedGuildId);
         return TypedResults.Ok(new TokenResponse(accessToken, sessionToken));
     }
 
