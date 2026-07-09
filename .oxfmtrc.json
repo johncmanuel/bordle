@@ -2,6 +2,7 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "ignorePatterns": [
     "**/*", // ignore everything by default
-    "!apps/client/**" // then include client/
+    "!apps/client/**", // then include client/
+    "apps/client/src/api/client.ts"
   ]
 }
