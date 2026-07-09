@@ -290,7 +290,7 @@ public static class PuzzleEndpoints
         var playerStates = allGuesses
             .GroupBy(g => g.UserId)
             .Select(group => new PlayerState(
-                group.Key,
+                group.Key.ToString(),
                 group.First().User?.Username ?? "Unknown User",
                 group.First().User?.Avatar,
                 [.. group.Select(g => ComputeLetterStates(g.Word, answerWord))]
@@ -306,4 +306,4 @@ public record GuessResult(string Word, List<string> States);
 public record GuessRequest(string Word);
 public record GuessResponse(string Word, List<string> States, bool IsFinished, bool IsSolved, string? Answer, string? AuthorUsername);
 public record PuzzlePlayersResponse(List<PlayerState> Players);
-public record PlayerState(long UserId, string Username, string? Avatar, List<List<string>> GuessStates);
+public record PlayerState(string UserId, string Username, string? Avatar, List<List<string>> GuessStates);

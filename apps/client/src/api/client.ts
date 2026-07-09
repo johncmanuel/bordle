@@ -348,7 +348,7 @@ export interface PuzzlePlayersResponse {
 }
 
 export interface PlayerState {
-    userId?: number;
+    userId?: string;
     username?: string;
     avatar?: string | undefined;
     guessStates?: string[][];

@@ -85,9 +85,9 @@ public static class DiscordEndpoints
             return TypedResults.BadRequest("Invalid GuildId.");
         }
 
-        await UpsertUserAndGuild(db, discordUser.Id, discordUser.Username, discordUser.Avatar, parsedGuildId);
+        await UpsertUserAndGuild(db, long.Parse(discordUser.Id), discordUser.Username, discordUser.Avatar, parsedGuildId);
 
-        var sessionToken = jwtService.GenerateToken(discordUser.Id, parsedGuildId);
+        var sessionToken = jwtService.GenerateToken(long.Parse(discordUser.Id), parsedGuildId);
         return TypedResults.Ok(new TokenResponse(accessToken, sessionToken));
     }
 
@@ -182,4 +182,4 @@ public record TokenResponse(
 internal record DiscordTokenResult(
     [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string AccessToken
 );
-internal record DiscordUserResult(long Id, string Username, string? Avatar);
+internal record DiscordUserResult(string Id, string Username, string? Avatar);
