@@ -194,15 +194,15 @@ setupDiscordSdk().then(async (auth) => {
   try {
     const puzzle = await apiClient.getApiPuzzlesDaily();
     console.log("puzzle fetched:", puzzle);
-    hintsForm.setHints(puzzle.hints ?? [], puzzle.puzzleId!);
+    hintsForm.setHints(puzzle.hints ?? [], puzzle.puzzle_id!);
 
     const puzzleInfo = app.querySelector<HTMLDivElement>('#puzzle-info')!;
     const today = new Date().toLocaleDateString(undefined, {
       month: 'long', day: 'numeric', year: 'numeric'
     });
-    puzzleInfo.innerHTML = `<span>No. ${puzzle.sequenceNumber}</span><span>&bull;</span><span>${today}</span>`;
+    puzzleInfo.innerHTML = `<span>No. ${puzzle.sequence_number}</span><span>&bull;</span><span>${today}</span>`;
 
-    new PlayersSidebar(sidebarEl, apiClient, puzzle.puzzleId!);
+    new PlayersSidebar(sidebarEl, apiClient, puzzle.puzzle_id!);
     new GameApp(board, keyboard, apiClient, puzzle);
   } catch (err) {
     console.warn('No daily puzzle available:', err);

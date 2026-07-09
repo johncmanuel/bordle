@@ -14,14 +14,14 @@ export class GameApp {
     this.board = board;
     this.keyboard = keyboard;
     this.apiClient = apiClient;
-    this.puzzleId = puzzle.puzzleId!;
+    this.puzzleId = puzzle.puzzle_id!;
 
     this.keyboard.addEventListener('key-pressed', this.handleKeyPress.bind(this) as EventListener);
 
     this.restoreExistingGuesses(puzzle);
 
-    if (puzzle.isFinished) {
-      this.handleGameOver(puzzle.answer!, puzzle.authorUsername);
+    if (puzzle.is_finished) {
+      this.handleGameOver(puzzle.answer!, puzzle.author_username);
     }
   }
 
@@ -69,10 +69,10 @@ export class GameApp {
           this.keyboard.updateKey(guess[i], pattern[i]);
         }
 
-        if (result.isFinished) {
+        if (result.is_finished) {
           // wait for reveal animation to finish before showing toast
           setTimeout(() => {
-            this.handleGameOver(result.answer!, result.authorUsername);
+            this.handleGameOver(result.answer!, result.author_username);
           }, 300 * 5 + 500); 
         }
 

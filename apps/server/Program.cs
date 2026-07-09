@@ -36,6 +36,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =
     // allow parsing Discord Snowflake IDs (which are sent as strings from JS due to MAX_SAFE_INTEGER limits) into C# longs
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
     options.SerializerOptions.NumberHandling = JsonNumberHandling.AllowReadingFromString;
+
+    // enforce snake_case naming for json properties
+    options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower;
 });
 
 builder.Services.AddSingleton<JwtService>();

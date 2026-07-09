@@ -178,13 +178,13 @@ public static class DiscordEndpoints
     }
 }
 
-public record TokenRequest(string Code, string GuildId);
-public record TokenResponse(
-    [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string AccessToken,
-    [property: System.Text.Json.Serialization.JsonPropertyName("session_token")] string SessionToken
+internal sealed record TokenRequest(string Code, string GuildId);
+internal sealed record TokenResponse(
+    string AccessToken,
+    string SessionToken
 );
 
-internal record DiscordTokenResult(
-    [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string AccessToken
+internal sealed record DiscordTokenResult(
+    string AccessToken
 );
-internal record DiscordUserResult(string Id, string Username, string? Avatar);
+internal sealed record DiscordUserResult(string Id, string Username, string? Avatar);

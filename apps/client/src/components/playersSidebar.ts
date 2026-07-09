@@ -25,8 +25,8 @@ export class PlayersSidebar {
 
       const playerEntries = serverPlayers.map((player) => {
         const username = player.username || "Unknown User";
-        const avatarUrl = getUserAvatar({ id: player.userId!, avatar: player.avatar });
-        return { username, avatarUrl, guessStates: player.guessStates ?? [] };
+        const avatarUrl = getUserAvatar({ id: player.user_id!, avatar: player.avatar });
+        return { username, avatarUrl, guessStates: player.guess_states ?? [] };
       });
 
       // add some dummy data for dev

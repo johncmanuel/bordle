@@ -301,7 +301,7 @@ export interface TokenResponse {
 
 export interface TokenRequest {
     code?: string;
-    guildId?: string;
+    guild_id?: string;
 }
 
 export interface SubmissionResponse {
@@ -316,13 +316,13 @@ export interface SubmitWordRequest {
 }
 
 export interface DailyPuzzleResponse {
-    puzzleId?: number;
-    sequenceNumber?: number;
+    puzzle_id?: number;
+    sequence_number?: number;
     hints?: string[];
     guesses?: GuessResult[];
-    isFinished?: boolean;
+    is_finished?: boolean;
     answer?: string | undefined;
-    authorUsername?: string | undefined;
+    author_username?: string | undefined;
 }
 
 export interface GuessResult {
@@ -333,10 +333,10 @@ export interface GuessResult {
 export interface GuessResponse {
     word?: string;
     states?: string[];
-    isFinished?: boolean;
-    isSolved?: boolean;
+    is_finished?: boolean;
+    is_solved?: boolean;
     answer?: string | undefined;
-    authorUsername?: string | undefined;
+    author_username?: string | undefined;
 }
 
 export interface GuessRequest {
@@ -348,10 +348,10 @@ export interface PuzzlePlayersResponse {
 }
 
 export interface PlayerState {
-    userId?: string;
+    user_id?: string;
     username?: string;
     avatar?: string | undefined;
-    guessStates?: string[][];
+    guess_states?: string[][];
 }
 
 export class ApiException extends Error {

@@ -301,9 +301,9 @@ public static class PuzzleEndpoints
     }
 }
 
-public record DailyPuzzleResponse(int PuzzleId, int SequenceNumber, List<string> Hints, List<GuessResult> Guesses, bool IsFinished, string? Answer, string? AuthorUsername);
-public record GuessResult(string Word, List<string> States);
-public record GuessRequest(string Word);
-public record GuessResponse(string Word, List<string> States, bool IsFinished, bool IsSolved, string? Answer, string? AuthorUsername);
-public record PuzzlePlayersResponse(List<PlayerState> Players);
-public record PlayerState(string UserId, string Username, string? Avatar, List<List<string>> GuessStates);
+internal sealed record DailyPuzzleResponse(int PuzzleId, int SequenceNumber, List<string> Hints, List<GuessResult> Guesses, bool IsFinished, string? Answer, string? AuthorUsername);
+internal sealed record GuessResult(string Word, List<string> States);
+internal sealed record GuessRequest(string Word);
+internal sealed record GuessResponse(string Word, List<string> States, bool IsFinished, bool IsSolved, string? Answer, string? AuthorUsername);
+internal sealed record PuzzlePlayersResponse(List<PlayerState> Players);
+internal sealed record PlayerState(string UserId, string Username, string? Avatar, List<List<string>> GuessStates);

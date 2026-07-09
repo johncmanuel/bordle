@@ -94,5 +94,5 @@ public static class SubmissionEndpoints
     }
 }
 
-public record SubmitWordRequest(string Word, List<string>? Hints);
-public record SubmissionResponse(int Id, string Word, List<string> Hints);
+internal sealed record SubmitWordRequest(string Word, List<string>? Hints);
+internal sealed record SubmissionResponse(int Id, string Word, List<string> Hints);
