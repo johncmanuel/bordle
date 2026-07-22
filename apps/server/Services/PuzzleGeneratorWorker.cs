@@ -30,7 +30,7 @@ namespace Bordle.Server.Services
             }
         }
 
-        private async Task GenerateMissingPuzzlesAsync(CancellationToken ct)
+        internal async Task GenerateMissingPuzzlesAsync(CancellationToken ct)
         {
             using var scope = serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -72,11 +72,32 @@ namespace Bordle.Server.Services
 
         internal static async Task<Puzzle> CreatePuzzleForGuildAsync(AppDbContext db, DictionaryService dictionaryService, long guildId, DateTime publishDate)
         {
-            // calculate the next sequence number for a guild
-            var maxSequenceNum = await db.Puzzles
+            var lastPuzzle = await db.Puzzles
+                .Include(p => p.Guesses)
                 .Where(p => p.GuildId == guildId)
-                .Select(p => (int?)p.SequenceNumber) // cast to nullable int to handle case where there are no puzzles yet
-                .MaxAsync() ?? 0;
+                .OrderByDescending(p => p.SequenceNumber)
+                .FirstOrDefaultAsync();
+
+            if (lastPuzzle != null)
+            {
+                bool noGuessesOnLastPuzzle = lastPuzzle.Guesses.Count == 0;
+#if DEBUG
+                bool missedInterval = lastPuzzle.PublishedAt < publishDate.AddMinutes(-2);
+#else
+                bool missedInterval = lastPuzzle.PublishedAt.Date < publishDate.AddDays(-1).Date;
+#endif
+                if (noGuessesOnLastPuzzle || missedInterval)
+                {
+                    var guildToUpdate = await db.Guilds.FindAsync(guildId);
+                    if (guildToUpdate != null)
+                    {
+                        guildToUpdate.DailyStreak = 0;
+                    }
+                }
+            }
+
+            // calculate the next sequence number for a guild
+            var maxSequenceNum = lastPuzzle?.SequenceNumber ?? 0;
             var nextSequenceNum = maxSequenceNum + 1;
 
             // find an unused submission from the given guild and check if it exists

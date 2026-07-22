@@ -14,8 +14,34 @@ public static class PuzzleEndpoints
             .RequireAuthorization();
 
         puzzles.MapGet("/daily", GetDailyPuzzle);
+        puzzles.MapGet("/streak", GetDailyStreak);
         puzzles.MapPost("/{id}/guess", SubmitGuess);
         puzzles.MapGet("/{id}/players", GetPuzzlePlayers);
+    }
+
+    private static async Task<Results<Ok<DailyStreakResponse>, BadRequest<string>, UnauthorizedHttpResult>> GetDailyStreak(
+        AppDbContext db,
+        ClaimsPrincipal user)
+    {
+        var guildIdClaim = user.FindFirstValue("guildId");
+
+        if (guildIdClaim is null)
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        if (!long.TryParse(guildIdClaim, out var guildId))
+        {
+            return TypedResults.BadRequest("Invalid data.");
+        }
+
+        var guild = await db.Guilds.FindAsync(guildId);
+        if (guild is null)
+        {
+            return TypedResults.BadRequest("Guild not found.");
+        }
+
+        return TypedResults.Ok(new DailyStreakResponse(guild.DailyStreak));
     }
 
     private static async Task<Results<Ok<DailyPuzzleResponse>, BadRequest<string>, NotFound<string>, UnauthorizedHttpResult>> GetDailyPuzzle(
@@ -149,7 +175,7 @@ public static class PuzzleEndpoints
         return [.. states];
     }
 
-    private static async Task<Results<Ok<GuessResponse>, BadRequest<string>, NotFound<string>, UnauthorizedHttpResult>> SubmitGuess(
+    internal static async Task<Results<Ok<GuessResponse>, BadRequest<string>, NotFound<string>, UnauthorizedHttpResult>> SubmitGuess(
         int id,
         GuessRequest req,
         AppDbContext db,
@@ -230,6 +256,17 @@ public static class PuzzleEndpoints
             CreatedAt = DateTime.UtcNow
         };
 
+        // if this is the first guess for today's puzzle, update the guild's daily streak
+        bool isFirstGuessForPuzzle = !await db.Guesses.AnyAsync(g => g.PuzzleId == id);
+        if (isFirstGuessForPuzzle)
+        {
+            var guild = await db.Guilds.FindAsync(guildId);
+            if (guild != null)
+            {
+                guild.DailyStreak++;
+            }
+        }
+
         db.Guesses.Add(guess);
         await db.SaveChangesAsync();
 
@@ -307,3 +344,4 @@ internal sealed record GuessRequest(string Word);
 internal sealed record GuessResponse(string Word, List<string> States, bool IsFinished, bool IsSolved, string? Answer, string? AuthorUsername);
 internal sealed record PuzzlePlayersResponse(List<PlayerState> Players);
 internal sealed record PlayerState(string UserId, string Username, string? Avatar, List<List<string>> GuessStates);
+internal sealed record DailyStreakResponse(int Streak);

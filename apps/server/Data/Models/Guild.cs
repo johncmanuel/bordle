@@ -12,5 +12,7 @@ namespace Bordle.Server.Data.Models
         public ICollection<WordSubmission> WordSubmissions { get; set; } = [];
         public ICollection<Puzzle> Puzzles { get; set; } = [];
         public ICollection<Guess> Guesses { get; set; } = [];
+
+        public int DailyStreak { get; set; } = 0;
     }
 }

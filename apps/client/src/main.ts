@@ -194,6 +194,7 @@ setupDiscordSdk()
 
     try {
       const puzzle = await apiClient.getApiPuzzlesDaily();
+      const streakInfo = await apiClient.getApiPuzzlesStreak().catch(() => ({ streak: 0 }));
       console.log("puzzle fetched:", puzzle);
       hintsForm.setHints(puzzle.hints ?? [], puzzle.puzzle_id!);
 
@@ -203,7 +204,7 @@ setupDiscordSdk()
         day: "numeric",
         year: "numeric",
       });
-      puzzleInfo.innerHTML = `<span>No. ${puzzle.sequence_number}</span><span>&bull;</span><span>${today}</span>`;
+      puzzleInfo.innerHTML = `<span>No. ${puzzle.sequence_number}</span><span>&bull;</span><span>${today}</span><span>&bull;</span><span style="color: #ff9100; font-weight: 800;">🔥 ${streakInfo.streak}</span>`;
 
       new PlayersSidebar(sidebarEl, apiClient, puzzle.puzzle_id!);
       new GameApp(board, keyboard, apiClient, puzzle);

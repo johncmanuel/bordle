@@ -274,3 +274,137 @@ public class PuzzleGeneratorTests
         Assert.Equal(3, puzzle3.SequenceNumber);
     }
 }
+
+public class DailyStreakTests
+{
+    private AppDbContext CreateInMemoryDb()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        return new AppDbContext(options);
+    }
+
+    private static DictionaryService CreateMockDictionaryService()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(Path.Combine(tempDir, "Data"));
+        File.WriteAllLines(Path.Combine(tempDir, "Data", "words.txt"), ["apple", "brave", "crane", "dance", "eagle"]);
+        var mockEnv = new Mock<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+        mockEnv.Setup(e => e.ContentRootPath).Returns(tempDir);
+        var service = new DictionaryService(mockEnv.Object);
+        service.InitializeAsync().GetAwaiter().GetResult();
+        return service;
+    }
+
+    private System.Security.Claims.ClaimsPrincipal CreateMockUser(long userId, long guildId)
+    {
+        return new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(
+        [
+            new System.Security.Claims.Claim("userId", userId.ToString()),
+            new System.Security.Claims.Claim("guildId", guildId.ToString())
+        ]));
+    }
+
+    [Fact]
+    public async Task SubmitGuess_FirstGuess_IncrementsStreak()
+    {
+        using var db = CreateInMemoryDb();
+        var guild = new Guild { Id = 1, DailyStreak = 0 };
+        db.Guilds.Add(guild);
+        var puzzle = new Puzzle { Id = 1, GuildId = 1, FallbackWord = "apple", PublishedAt = DateTime.UtcNow, ClosedAt = DateTime.UtcNow.AddDays(1), SequenceNumber = 1 };
+        db.Puzzles.Add(puzzle);
+        await db.SaveChangesAsync();
+
+        var dictService = CreateMockDictionaryService();
+        var user = CreateMockUser(1, 1);
+        var req = new GuessRequest("apple");
+        await PuzzleEndpoints.SubmitGuess(puzzle.Id, req, db, user);
+
+        var updatedGuild = await db.Guilds.FindAsync(1L);
+        Assert.Equal(1, updatedGuild!.DailyStreak);
+    }
+
+    [Fact]
+    public async Task SubmitGuess_SecondGuess_DoesNotIncrementStreak()
+    {
+        using var db = CreateInMemoryDb();
+        var guild = new Guild { Id = 1, DailyStreak = 1 }; // already incremented
+        db.Guilds.Add(guild);
+        var puzzle = new Puzzle { Id = 1, GuildId = 1, FallbackWord = "apple", PublishedAt = DateTime.UtcNow, ClosedAt = DateTime.UtcNow.AddDays(1), SequenceNumber = 1 };
+        db.Puzzles.Add(puzzle);
+        db.Guesses.Add(new Guess { PuzzleId = 1, GuildId = 1, UserId = 2, AttemptNumber = 1, Word = "CRANE", CreatedAt = DateTime.UtcNow });
+        await db.SaveChangesAsync();
+
+        var dictService = CreateMockDictionaryService();
+        var user = CreateMockUser(1, 1);
+        var req = new GuessRequest("brave");
+        await PuzzleEndpoints.SubmitGuess(puzzle.Id, req, db, user);
+
+        var updatedGuild = await db.Guilds.FindAsync(1L);
+        Assert.Equal(1, updatedGuild!.DailyStreak); // still 1
+    }
+
+    [Fact]
+    public async Task GenerateMissingPuzzlesAsync_NoGuesses_ResetsStreak()
+    {
+        using var db = CreateInMemoryDb();
+        var guild = new Guild { Id = 1, DailyStreak = 5 }; 
+        db.Guilds.Add(guild);
+        
+        var minute = DateTime.UtcNow.Minute / 2 * 2;
+        var todayUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, minute, 0, DateTimeKind.Utc);
+
+        var prevPuzzle = new Puzzle { Id = 1, GuildId = 1, FallbackWord = "apple", PublishedAt = todayUtc.AddMinutes(-2), ClosedAt = todayUtc, SequenceNumber = 1 };
+        db.Puzzles.Add(prevPuzzle);
+        await db.SaveChangesAsync();
+
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        var mockServiceScope = new Mock<Microsoft.Extensions.DependencyInjection.IServiceScope>();
+        var mockServiceScopeFactory = new Mock<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>();
+
+        mockServiceProvider.Setup(s => s.GetService(typeof(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory))).Returns(mockServiceScopeFactory.Object);
+        mockServiceScopeFactory.Setup(s => s.CreateScope()).Returns(mockServiceScope.Object);
+        mockServiceScope.Setup(s => s.ServiceProvider).Returns(mockServiceProvider.Object);
+        mockServiceProvider.Setup(s => s.GetService(typeof(AppDbContext))).Returns(db);
+
+        var worker = new PuzzleGeneratorWorker(mockServiceProvider.Object, CreateMockDictionaryService(), new Mock<ILogger<PuzzleGeneratorWorker>>().Object);
+        
+        await worker.GenerateMissingPuzzlesAsync(CancellationToken.None);
+
+        var updatedGuild = await db.Guilds.FindAsync(1L);
+        Assert.Equal(0, updatedGuild!.DailyStreak); 
+    }
+
+    [Fact]
+    public async Task GenerateMissingPuzzlesAsync_WithGuesses_PreservesStreak()
+    {
+        using var db = CreateInMemoryDb();
+        var guild = new Guild { Id = 1, DailyStreak = 5 }; 
+        db.Guilds.Add(guild);
+        
+        var minute = DateTime.UtcNow.Minute / 2 * 2;
+        var todayUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, minute, 0, DateTimeKind.Utc);
+
+        var prevPuzzle = new Puzzle { Id = 1, GuildId = 1, FallbackWord = "apple", PublishedAt = todayUtc.AddMinutes(-2), ClosedAt = todayUtc, SequenceNumber = 1 };
+        db.Puzzles.Add(prevPuzzle);
+        db.Guesses.Add(new Guess { PuzzleId = 1, GuildId = 1, UserId = 1, AttemptNumber = 1, Word = "APPLE", CreatedAt = todayUtc.AddMinutes(-1) });
+        await db.SaveChangesAsync();
+
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        var mockServiceScope = new Mock<Microsoft.Extensions.DependencyInjection.IServiceScope>();
+        var mockServiceScopeFactory = new Mock<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>();
+
+        mockServiceProvider.Setup(s => s.GetService(typeof(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory))).Returns(mockServiceScopeFactory.Object);
+        mockServiceScopeFactory.Setup(s => s.CreateScope()).Returns(mockServiceScope.Object);
+        mockServiceScope.Setup(s => s.ServiceProvider).Returns(mockServiceProvider.Object);
+        mockServiceProvider.Setup(s => s.GetService(typeof(AppDbContext))).Returns(db);
+
+        var worker = new PuzzleGeneratorWorker(mockServiceProvider.Object, CreateMockDictionaryService(), new Mock<ILogger<PuzzleGeneratorWorker>>().Object);
+        
+        await worker.GenerateMissingPuzzlesAsync(CancellationToken.None);
+
+        var updatedGuild = await db.Guilds.FindAsync(1L);
+        Assert.Equal(5, updatedGuild!.DailyStreak); // still 5
+    }
+}
