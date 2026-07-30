@@ -26,7 +26,8 @@ public static class DiscordEndpoints
     private static async Task<Results<Ok<TokenResponse>, BadRequest<string>>> GetDiscordToken(
         TokenRequest req,
         AppDbContext db,
-        JwtService jwtService)
+        JwtService jwtService,
+        IConfiguration config)
     {
         string accessToken;
 
@@ -48,8 +49,8 @@ public static class DiscordEndpoints
         // Exchange the OAuth code for an access token with Discord
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["client_id"] = Env.GetString("VITE_DISCORD_CLIENT_ID"),
-            ["client_secret"] = Env.GetString("CLIENT_SECRET"),
+            ["client_id"] = config["VITE_DISCORD_CLIENT_ID"] ?? "",
+            ["client_secret"] = config["CLIENT_SECRET"] ?? "",
             ["grant_type"] = "authorization_code",
             ["code"] = req.Code
         });
