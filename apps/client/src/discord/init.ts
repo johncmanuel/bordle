@@ -8,8 +8,11 @@ export const baseDiscordApiUrl = "https://discord.com/api";
 export const SESSION_TOKEN_KEY = "bordle_session_token";
 
 export async function setupDiscordSdk() {
+  console.log("[Discord] Waiting for SDK ready...");
   await discordSDK.ready();
+  console.log("[Discord] SDK ready.");
 
+  console.log("[Discord] Requesting authorization...");
   const { code } = await discordSDK.commands.authorize({
     client_id: import.meta.env.VITE_DISCORD_CLIENT_ID,
     response_type: "code",
@@ -25,12 +28,14 @@ export async function setupDiscordSdk() {
       "guilds.members.read",
     ],
   });
+  console.log("[Discord] Authorization code received:", code?.slice(0, 8) + "...");
 
   const guildId = discordSDK.guildId;
   if (!guildId) {
     throw new Error("Guild ID is not available from Discord SDK");
   }
 
+  console.log("[Discord] Fetching token from server...");
   const response = await fetch("/api/discord/token", {
     method: "POST",
     headers: {
@@ -48,11 +53,13 @@ export async function setupDiscordSdk() {
       `Failed to retrieve access token: ${response.statusText}. Details: ${errorText}`,
     );
   }
+  console.log("[Discord] Token received from server.");
 
   const { access_token, session_token } = await response.json();
 
   sessionStorage.setItem(SESSION_TOKEN_KEY, session_token);
 
+  console.log("[Discord] Authenticating with Discord SDK...");
   auth = await discordSDK.commands.authenticate({
     access_token,
   });
@@ -60,6 +67,7 @@ export async function setupDiscordSdk() {
   if (auth == null) {
     throw new Error("Authenticate command failed");
   }
+  console.log("[Discord] Authentication complete.");
 
   return auth;
 }
