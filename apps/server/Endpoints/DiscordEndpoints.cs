@@ -46,11 +46,20 @@ public static class DiscordEndpoints
         }
 #endif
 
+        if (string.IsNullOrEmpty(req.Code)) return TypedResults.BadRequest("Code is missing from request.");
+        if (string.IsNullOrEmpty(req.GuildId)) return TypedResults.BadRequest("GuildId is missing from request. Ensure JSON property names match.");
+
+        var clientId = config["VITE_DISCORD_CLIENT_ID"];
+        var clientSecret = config["CLIENT_SECRET"];
+
+        if (string.IsNullOrEmpty(clientId)) return TypedResults.BadRequest("VITE_DISCORD_CLIENT_ID configuration is missing on server.");
+        if (string.IsNullOrEmpty(clientSecret)) return TypedResults.BadRequest("CLIENT_SECRET configuration is missing on server.");
+
         // Exchange the OAuth code for an access token with Discord
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["client_id"] = config["VITE_DISCORD_CLIENT_ID"] ?? "",
-            ["client_secret"] = config["CLIENT_SECRET"] ?? "",
+            ["client_id"] = clientId,
+            ["client_secret"] = clientSecret,
             ["grant_type"] = "authorization_code",
             ["code"] = req.Code
         });
@@ -59,11 +68,17 @@ public static class DiscordEndpoints
 
         if (!tokenResponse.IsSuccessStatusCode)
         {
-            return TypedResults.BadRequest("Failed to retrieve token from Discord.");
+            var err = await tokenResponse.Content.ReadAsStringAsync();
+            return TypedResults.BadRequest($"Failed to retrieve token from Discord. Status: {tokenResponse.StatusCode}. Error: {err}");
         }
 
         var tokenResult = await tokenResponse.Content.ReadFromJsonAsync<DiscordTokenResult>();
-        accessToken = tokenResult!.AccessToken;
+        if (tokenResult == null || string.IsNullOrEmpty(tokenResult.AccessToken))
+        {
+            return TypedResults.BadRequest("Failed to parse access token from Discord response.");
+        }
+
+        accessToken = tokenResult.AccessToken;
 
         // fetch the user's identity from Discord
         using var request = new HttpRequestMessage(HttpMethod.Get, $"{_discordApiBaseUrl}/users/@me");
@@ -72,7 +87,7 @@ public static class DiscordEndpoints
         var userResponse = await _httpClient.SendAsync(request);
         if (!userResponse.IsSuccessStatusCode)
         {
-            return TypedResults.BadRequest("Failed to retrieve user info from Discord.");
+            return TypedResults.BadRequest($"Failed to retrieve user info from Discord. Status: {userResponse.StatusCode}");
         }
 
         var discordUser = await userResponse.Content.ReadFromJsonAsync<DiscordUserResult>();
@@ -83,12 +98,12 @@ public static class DiscordEndpoints
 
         if (!long.TryParse(req.GuildId, out var parsedGuildId))
         {
-            return TypedResults.BadRequest("Invalid info.");
+            return TypedResults.BadRequest($"Invalid GuildId format: {req.GuildId}");
         }
 
         if (!long.TryParse(discordUser.Id, out var parsedUserId))
         {
-            return TypedResults.BadRequest("Invalid info.");
+            return TypedResults.BadRequest($"Invalid UserId format from Discord: {discordUser.Id}");
         }
 
         await UpsertUserAndGuild(db, parsedUserId, discordUser.Username, discordUser.Avatar, parsedGuildId);

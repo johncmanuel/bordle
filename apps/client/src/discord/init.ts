@@ -43,7 +43,10 @@ export async function setupDiscordSdk() {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to retrieve access token: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(
+      `Failed to retrieve access token: ${response.statusText}. Details: ${errorText}`,
+    );
   }
 
   const { access_token, session_token } = await response.json();
