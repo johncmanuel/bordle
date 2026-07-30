@@ -8,6 +8,8 @@ export const baseDiscordApiUrl = "https://discord.com/api";
 export const SESSION_TOKEN_KEY = "bordle_session_token";
 
 export async function setupDiscordSdk() {
+  console.log("[Discord] Initialized with Client ID:", import.meta.env.VITE_DISCORD_CLIENT_ID);
+  console.log("[Discord] SDK clientId property:", (discordSDK as any).clientId);
   console.log("[Discord] Waiting for SDK ready...");
   await discordSDK.ready();
   console.log("[Discord] SDK ready.");
