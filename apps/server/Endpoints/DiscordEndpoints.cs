@@ -72,7 +72,9 @@ public static class DiscordEndpoints
             return TypedResults.BadRequest($"Failed to retrieve token from Discord. Status: {tokenResponse.StatusCode}. Error: {err}");
         }
 
-        var tokenResult = await tokenResponse.Content.ReadFromJsonAsync<DiscordTokenResult>();
+        var tokenResult = await tokenResponse.Content.ReadFromJsonAsync<DiscordTokenResult>(
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }
+        );
         if (tokenResult == null || string.IsNullOrEmpty(tokenResult.AccessToken))
         {
             return TypedResults.BadRequest("Failed to parse access token from Discord response.");
@@ -90,7 +92,9 @@ public static class DiscordEndpoints
             return TypedResults.BadRequest($"Failed to retrieve user info from Discord. Status: {userResponse.StatusCode}");
         }
 
-        var discordUser = await userResponse.Content.ReadFromJsonAsync<DiscordUserResult>();
+        var discordUser = await userResponse.Content.ReadFromJsonAsync<DiscordUserResult>(
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }
+        );
         if (discordUser is null)
         {
             return TypedResults.BadRequest("Invalid user info received from Discord.");
