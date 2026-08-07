@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using DotNetEnv;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using NSec.Cryptography;
@@ -12,6 +11,7 @@ using Bordle.Server.Services;
 
 public static class DiscordEndpoints
 {
+    private static readonly string _discordApiBaseUrl = "https://discord.com/api";
 
     public static void RegisterDiscordEndpoints(this WebApplication app)
     {
@@ -20,8 +20,6 @@ public static class DiscordEndpoints
         discord.MapPost("/token", GetDiscordToken);
         discord.MapPost("/interactions", HandleInteraction).AllowAnonymous();
     }
-
-    private static readonly string _discordApiBaseUrl = "https://discord.com/api";
 
     private static async Task<Results<Ok<TokenResponse>, BadRequest<string>>> GetDiscordToken(
         TokenRequest req,
@@ -75,7 +73,7 @@ public static class DiscordEndpoints
         }
 
         var tokenResult = await tokenResponse.Content.ReadFromJsonAsync<DiscordTokenResult>(
-            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }
         );
         if (tokenResult == null || string.IsNullOrEmpty(tokenResult.AccessToken))
         {
@@ -95,7 +93,7 @@ public static class DiscordEndpoints
         }
 
         var discordUser = await userResponse.Content.ReadFromJsonAsync<DiscordUserResult>(
-            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower }
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower }
         );
         if (discordUser is null)
         {
@@ -139,9 +137,11 @@ public static class DiscordEndpoints
         await db.SaveChangesAsync();
     }
 
-    // Slash commands will be a WIP once everything else is working. Just gonna lay out the foundation here.
+    // TODO: break this up into smaller methods, create a file for storing shared static constants across
+    // Discord services
+    // See how interactions work:
     // https://docs.discord.com/developers/interactions/overview
-    private static async Task<IResult> HandleInteraction(HttpContext context, AppDbContext db, IConfiguration config)
+    private static async Task<IResult> HandleInteraction(HttpContext context, AppDbContext db, IConfiguration config, DiscordWebhookService webhookService)
     {
         var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
         var signature = context.Request.Headers["X-Signature-Ed25519"].FirstOrDefault();
@@ -173,30 +173,26 @@ public static class DiscordEndpoints
         // handle slash commands
         if (type == 2)
         {
-            var commandName = root.GetProperty("data").GetProperty("name").GetString();
+            if (!root.TryGetProperty("data", out var data) ||
+                !data.TryGetProperty("name", out var nameProp))
+            {
+                return Results.BadRequest("Malformed interaction payload.");
+            }
+
+            var commandName = nameProp.GetString();
 
             if (!root.TryGetProperty("guild_id", out var guildIdProp) ||
                 !long.TryParse(guildIdProp.GetString(), out var guildId))
             {
-                return Results.BadRequest("Missing or invalid guild_id in interaction.");
+                return Results.Json(new
+                {
+                    type = 4,
+                    data = new { content = "❌ This command can only be used inside a server.", flags = 64 }
+                });
             }
 
             if (commandName == "subscribe")
             {
-                var options = root.GetProperty("data").GetProperty("options");
-                var webhookUrl = options.EnumerateArray()
-                    .FirstOrDefault(o => o.GetProperty("name").GetString() == "webhook_url")
-                    .GetProperty("value").GetString();
-
-                if (string.IsNullOrWhiteSpace(webhookUrl))
-                {
-                    return Results.Json(new
-                    {
-                        type = 4,
-                        data = new { content = "❌ Please provide a valid webhook URL.", flags = 64 }
-                    });
-                }
-
                 var guild = await db.Guilds.FindAsync(guildId);
                 if (guild is null)
                 {
@@ -207,13 +203,71 @@ public static class DiscordEndpoints
                     });
                 }
 
+                string? webhookUrl = null;
+                if (data.TryGetProperty("options", out var options))
+                {
+                    foreach (var option in options.EnumerateArray())
+                    {
+                        if (option.TryGetProperty("name", out var optName) &&
+                            optName.GetString() == "webhook_url" &&
+                            option.TryGetProperty("value", out var optVal))
+                        {
+                            webhookUrl = optVal.GetString();
+                            break;
+                        }
+                    }
+                }
+
+                bool usingSavedUrl = false;
+                if (string.IsNullOrWhiteSpace(webhookUrl))
+                {
+                    if (string.IsNullOrWhiteSpace(guild.WebhookUrl))
+                    {
+                        return Results.Json(new
+                        {
+                            type = 4,
+                            data = new { content = "❌ No saved webhook found. Please provide a webhook URL in the command options.", flags = 64 }
+                        });
+                    }
+
+                    webhookUrl = guild.WebhookUrl;
+                    usingSavedUrl = true;
+                }
+                else if (!webhookUrl.StartsWith($"{_discordApiBaseUrl}/webhooks/"))
+                {
+                    return Results.Json(new
+                    {
+                        type = 4,
+                        data = new { content = "❌ Invalid webhook URL provided.", flags = 64 }
+                    });
+                }
+
+                bool pingSuccess = await webhookService.SendTestPingAsync(webhookUrl);
+                if (!pingSuccess)
+                {
+                    guild.WebhookUrl = null;
+                    guild.IsSubscribed = false;
+                    await db.SaveChangesAsync();
+
+                    return Results.Json(new
+                    {
+                        type = 4,
+                        data = new { content = "❌ The webhook URL is invalid or was deleted. Please provide a new one.", flags = 64 }
+                    });
+                }
+
                 guild.WebhookUrl = webhookUrl;
+                guild.IsSubscribed = true;
                 await db.SaveChangesAsync();
+
+                var successMessage = usingSavedUrl
+                    ? "✅ Resubscribed using your previously saved webhook URL!"
+                    : "✅ Subscribed! You'll receive puzzle streak notifications in this channel.";
 
                 return Results.Json(new
                 {
                     type = 4,
-                    data = new { content = "✅ Subscribed! You'll receive puzzle streak notifications in this channel.", flags = 64 }
+                    data = new { content = successMessage }
                 });
             }
 
@@ -222,14 +276,14 @@ public static class DiscordEndpoints
                 var guild = await db.Guilds.FindAsync(guildId);
                 if (guild is not null)
                 {
-                    guild.WebhookUrl = null;
+                    guild.IsSubscribed = false;
                     await db.SaveChangesAsync();
                 }
 
                 return Results.Json(new
                 {
                     type = 4,
-                    data = new { content = "✅ Unsubscribed. You'll no longer receive puzzle notifications.", flags = 64 }
+                    data = new { content = "✅ Unsubscribed. You'll no longer receive puzzle notifications." }
                 });
             }
 

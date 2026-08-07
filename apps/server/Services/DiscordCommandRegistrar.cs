@@ -4,9 +4,10 @@ using System.Text.Json.Serialization;
 
 namespace Bordle.Server.Services
 {
-   public static class DiscordCommandRegistrar
+    public static class DiscordCommandRegistrar
     {
         private static readonly string _discordApiBase = "https://discord.com/api/v10";
+        private static readonly string _discordCommandPermission = "536870912";
 
         public static async Task<bool> TryExecuteAsync(string[] args)
         {
@@ -56,12 +57,12 @@ namespace Bordle.Server.Services
             var tokenResult = JsonSerializer.Deserialize<OAuthTokenResponse>(tokenBody)
                 ?? throw new InvalidOperationException("Failed to parse OAuth2 token response.");
 
-            var subscribeOption = new CommandOption("webhook_url", "The Discord webhook URL to send puzzle notifications to.", 3, true);
+            var subscribeOption = new CommandOption("webhook_url", "The Discord webhook URL to send puzzle notifications to.", 3, false);
 
             var commands = new[]
             {
-                new CommandBody("subscribe", "Subscribe this server to Bordle puzzle notifications via a webhook.", [subscribeOption]),
-                new CommandBody("unsubscribe", "Unsubscribe this server from Bordle puzzle notifications.", [])
+                new CommandBody("subscribe", "Subscribe this server to Bordle puzzle notifications via a webhook.", [subscribeOption], _discordCommandPermission),
+                new CommandBody("unsubscribe", "Unsubscribe this server from Bordle puzzle notifications.", [], _discordCommandPermission),
             };
 
             client.DefaultRequestHeaders.Authorization =
@@ -76,7 +77,8 @@ namespace Bordle.Server.Services
             {
                 var content = new StringContent(JsonSerializer.Serialize(command, new JsonSerializerOptions
                 {
-                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+                    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 }), Encoding.UTF8, "application/json");
 
                 var response = await client.PostAsync(url, content);
@@ -104,6 +106,6 @@ namespace Bordle.Server.Services
 
 // Record types used for JSON serialization of Discord slash command payloads
 internal sealed record CommandOption(string Name, string Description, int Type, bool Required);
-internal sealed record CommandBody(string Name, string Description, CommandOption[] Options);
+internal sealed record CommandBody(string Name, string Description, CommandOption[] Options, string? DefaultMemberPermissions = null);
 internal sealed record OAuthTokenResponse([property: JsonPropertyName("access_token")] string AccessToken);
 

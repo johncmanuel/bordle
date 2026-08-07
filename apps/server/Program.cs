@@ -16,7 +16,7 @@ if (await DiscordCommandRegistrar.TryExecuteAsync(args))
 var builder = WebApplication.CreateBuilder(args);
 
 // load env vars via .env from root
-DotNetEnv.Env.TraversePath().Load();
+Env.TraversePath().Load();
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddEndpointsApiExplorer();

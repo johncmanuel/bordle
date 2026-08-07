@@ -9,7 +9,6 @@ namespace Bordle.Server.Services
         DictionaryService dictionaryService,
         DiscordWebhookService discordWebhookService,
         ILogger<PuzzleGeneratorWorker> logger) : BackgroundService
-
     {
         private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
 
@@ -78,7 +77,7 @@ namespace Bordle.Server.Services
 
         private async Task SendWebhookStreakNotificationAsync(AppDbContext db, Guild guild, DateTime todayUtc, CancellationToken ct)
         {
-            if (string.IsNullOrEmpty(guild.WebhookUrl))
+            if (!guild.IsSubscribed || string.IsNullOrEmpty(guild.WebhookUrl))
                 return;
 
             try
@@ -113,11 +112,14 @@ namespace Bordle.Server.Services
 #endif
 
                 var playerNames = prevPuzzle?.Guesses
+                    .OrderBy(g => g.CreatedAt)
                     .DistinctBy(g => g.UserId)
                     .Select(g => g.User?.Username)
                     .ToList() ?? [];
 
                 await discordWebhookService.SendStreakNotificationAsync(
+                    db,
+                    guild.Id,
                     guild.WebhookUrl,
                     guild.DailyStreak,
                     playerNames);

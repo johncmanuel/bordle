@@ -16,5 +16,6 @@ namespace Bordle.Server.Data.Models
         public int DailyStreak { get; set; } = 0;
 
         public string? WebhookUrl { get; set; }
+        public bool IsSubscribed { get; set; } = false;
     }
 }

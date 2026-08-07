@@ -31,6 +31,12 @@ If you want to run the server and register the Discord slash commands:
 dotnet run --project=./apps/server/  --register-commands -p:RunNSwag=False -v d`
 ```
 
+Alternatively, use Docker to start up the test environment, run the server container with the flag, and remove it so we don't need to manually start up the dev Postgres DB container:
+
+```sh
+docker compose -f docker-compose.test.yaml run --rm server --register-commands --force-build
+```
+
 ## Test
 
 ### Test files for server
