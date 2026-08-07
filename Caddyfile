@@ -1,4 +1,5 @@
 # test version of caddyfile
+# used to serve the built files for client
 
 :8080 {
     handle /api/* {
