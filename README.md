@@ -8,16 +8,27 @@ Create a `.env` file at root based on `.env.example`
 
 ### PostgreSQL
 
-Run `docker compose -f docker-compose.dev.yaml up -d` to start the database.
+Since database migrations are ran automatically in the entry point, `Program.cs`, ensure the Postgres DB is started with:
 
-Don't forget to run `cd apps/server`, `dotnet tool run dotnet-ef migrations add <YourMigrationName>`, and `dotnet tool run dotnet-ef database update` if making changes to the DB schema and want to perform migrations.
+```sh
+docker compose -f docker-compose.dev.yaml up -d
+```
+
+> If you want to apply migrations beforehand, run `cd apps/server/`, `dotnet tool run dotnet-ef migrations add <YourMigrationName>` and `dotnet tool run dotnet-ef database update`. 
 
 ## .NET server
 
 If you want to run the server without NSwag, use:
 
+```sh
+dotnet run --project=./apps/server/ -p:RunNSwag=False
 ```
-dotnet run -p:RunNSwag=False
+
+If you want to run the server and register the Discord slash commands:
+
+```sh
+# we use -v d for detailed logging just incase errors occur
+dotnet run --project=./apps/server/  --register-commands -p:RunNSwag=False -v d`
 ```
 
 ## Test
@@ -27,6 +38,8 @@ dotnet run -p:RunNSwag=False
 For the server, run `cd apps/server && dotnet test` 
 
 ### Test environment in docker (with Tailscale)
+
+Tailscale is one of the tools that can let us publicly expose the client URL with HTTPS, which Discord requires.
 
 To set up and expose the test environment publicly using Tailscale:
 
