@@ -7,6 +7,7 @@ namespace Bordle.Server.Services
     public class PuzzleGeneratorWorker(
         IServiceProvider serviceProvider,
         DictionaryService dictionaryService,
+        DiscordWebhookService discordWebhookService,
         ILogger<PuzzleGeneratorWorker> logger) : BackgroundService
 
     {
@@ -68,6 +69,63 @@ namespace Bordle.Server.Services
             }
 
             await db.SaveChangesAsync(ct);
+
+            foreach (var guild in guildsWithoutPuzzle)
+            {
+                await SendWebhookStreakNotificationAsync(db, guild, todayUtc, ct);
+            }
+        }
+
+        private async Task SendWebhookStreakNotificationAsync(AppDbContext db, Guild guild, DateTime todayUtc, CancellationToken ct)
+        {
+            if (string.IsNullOrEmpty(guild.WebhookUrl))
+                return;
+
+            try
+            {
+
+                var newPuzzle = await db.Puzzles
+                    .Where(p => p.GuildId == guild.Id && p.PublishedAt == todayUtc)
+                    .FirstOrDefaultAsync(ct);
+
+                if (newPuzzle == null)
+                    return;
+
+                var prevPuzzle = await db.Puzzles
+                    .Include(p => p.Guesses)
+                        .ThenInclude(g => g.User)
+                    .Where(p => p.GuildId == guild.Id && p.Id != newPuzzle.Id)
+                    .OrderByDescending(p => p.SequenceNumber)
+                    .FirstOrDefaultAsync(ct);
+
+#if !DEBUG
+                if (prevPuzzle == null || prevPuzzle.Guesses.Count == 0)
+                    return;
+
+                var correctWord = prevPuzzle.Submission?.Word ?? prevPuzzle.FallbackWord;
+
+                // Only send notification if at least one player guessed correctly
+                var anySuccess = prevPuzzle.Guesses
+                    .Any(g => string.Equals(g.Word, correctWord, StringComparison.OrdinalIgnoreCase));
+
+                if (!anySuccess)
+                    return;
+#endif
+
+                var playerNames = prevPuzzle?.Guesses
+                    .DistinctBy(g => g.UserId)
+                    .Select(g => g.User?.Username)
+                    .ToList() ?? [];
+
+                await discordWebhookService.SendStreakNotificationAsync(
+                    guild.WebhookUrl,
+                    guild.DailyStreak,
+                    playerNames);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to send webhook notification for guild {GuildId}", guild.Id);
+            }
         }
 
         internal static async Task<Puzzle> CreatePuzzleForGuildAsync(AppDbContext db, DictionaryService dictionaryService, long guildId, DateTime publishDate)

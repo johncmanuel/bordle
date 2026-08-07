@@ -12,8 +12,6 @@ using Bordle.Server.Services;
 
 public static class DiscordEndpoints
 {
-    private static readonly HttpClient _httpClient = new();
-    private static readonly string _discordApiBaseUrl = "https://discord.com/api";
 
     public static void RegisterDiscordEndpoints(this WebApplication app)
     {
@@ -23,12 +21,16 @@ public static class DiscordEndpoints
         discord.MapPost("/interactions", HandleInteraction).AllowAnonymous();
     }
 
+    private static readonly string _discordApiBaseUrl = "https://discord.com/api";
+
     private static async Task<Results<Ok<TokenResponse>, BadRequest<string>>> GetDiscordToken(
         TokenRequest req,
         AppDbContext db,
         JwtService jwtService,
+        IHttpClientFactory httpClientFactory,
         IConfiguration config)
     {
+        var _httpClient = httpClientFactory.CreateClient("Discord");
         string accessToken;
 
 #if DEBUG
@@ -139,7 +141,7 @@ public static class DiscordEndpoints
 
     // Slash commands will be a WIP once everything else is working. Just gonna lay out the foundation here.
     // https://docs.discord.com/developers/interactions/overview
-    private static async Task<IResult> HandleInteraction(HttpContext context, IConfiguration config)
+    private static async Task<IResult> HandleInteraction(HttpContext context, AppDbContext db, IConfiguration config)
     {
         var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
         var signature = context.Request.Headers["X-Signature-Ed25519"].FirstOrDefault();
@@ -168,10 +170,70 @@ public static class DiscordEndpoints
             return Results.Json(new { type = 1 });
         }
 
-        // handle the /bordle entry point command
+        // handle slash commands
         if (type == 2)
         {
-            // type 12 = launch activity
+            var commandName = root.GetProperty("data").GetProperty("name").GetString();
+
+            if (!root.TryGetProperty("guild_id", out var guildIdProp) ||
+                !long.TryParse(guildIdProp.GetString(), out var guildId))
+            {
+                return Results.BadRequest("Missing or invalid guild_id in interaction.");
+            }
+
+            if (commandName == "subscribe")
+            {
+                var options = root.GetProperty("data").GetProperty("options");
+                var webhookUrl = options.EnumerateArray()
+                    .FirstOrDefault(o => o.GetProperty("name").GetString() == "webhook_url")
+                    .GetProperty("value").GetString();
+
+                if (string.IsNullOrWhiteSpace(webhookUrl))
+                {
+                    return Results.Json(new
+                    {
+                        type = 4,
+                        data = new { content = "❌ Please provide a valid webhook URL.", flags = 64 }
+                    });
+                }
+
+                var guild = await db.Guilds.FindAsync(guildId);
+                if (guild is null)
+                {
+                    return Results.Json(new
+                    {
+                        type = 4,
+                        data = new { content = "❌ Your server is not registered with Bordle yet. Start a game first!", flags = 64 }
+                    });
+                }
+
+                guild.WebhookUrl = webhookUrl;
+                await db.SaveChangesAsync();
+
+                return Results.Json(new
+                {
+                    type = 4,
+                    data = new { content = "✅ Subscribed! You'll receive puzzle streak notifications in this channel.", flags = 64 }
+                });
+            }
+
+            if (commandName == "unsubscribe")
+            {
+                var guild = await db.Guilds.FindAsync(guildId);
+                if (guild is not null)
+                {
+                    guild.WebhookUrl = null;
+                    await db.SaveChangesAsync();
+                }
+
+                return Results.Json(new
+                {
+                    type = 4,
+                    data = new { content = "✅ Unsubscribed. You'll no longer receive puzzle notifications.", flags = 64 }
+                });
+            }
+
+            // fallback: launch the activity for any other command 
             return Results.Json(new { type = 12 });
         }
 

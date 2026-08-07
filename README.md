@@ -12,6 +12,14 @@ Run `docker compose -f docker-compose.dev.yaml up -d` to start the database.
 
 Don't forget to run `cd apps/server`, `dotnet tool run dotnet-ef migrations add <YourMigrationName>`, and `dotnet tool run dotnet-ef database update` if making changes to the DB schema and want to perform migrations.
 
+## .NET server
+
+If you want to run the server without NSwag, use:
+
+```
+dotnet run -p:RunNSwag=False
+```
+
 ## Test
 
 ### Test files for server

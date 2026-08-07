@@ -14,5 +14,7 @@ namespace Bordle.Server.Data.Models
         public ICollection<Guess> Guesses { get; set; } = [];
 
         public int DailyStreak { get; set; } = 0;
+
+        public string? WebhookUrl { get; set; }
     }
 }

@@ -9,10 +9,14 @@ using System.Threading.RateLimiting;
 using Bordle.Server.Data;
 using Bordle.Server.Services;
 
+// --register-commands: one-off mode to register Discord slash commands then exit.
+if (await DiscordCommandRegistrar.TryExecuteAsync(args))
+    return;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // load env vars via .env from root
-Env.Load();
+DotNetEnv.Env.TraversePath().Load();
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -44,6 +48,10 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<DictionaryService>();
 builder.Services.AddHostedService<PuzzleGeneratorWorker>();
+
+// reusable HTTP client used by Discord webhook and interaction endpoints
+builder.Services.AddHttpClient("Discord");
+builder.Services.AddSingleton<DiscordWebhookService>();
 
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
