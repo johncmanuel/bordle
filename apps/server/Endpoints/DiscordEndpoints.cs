@@ -191,109 +191,118 @@ public static class DiscordEndpoints
                 });
             }
 
-            if (commandName == "subscribe")
+            return commandName switch
             {
-                var guild = await db.Guilds.FindAsync(guildId);
-                if (guild is null)
-                {
-                    return Results.Json(new
-                    {
-                        type = 4,
-                        data = new { content = "❌ Your server is not registered with Bordle yet. Start a game first!", flags = 64 }
-                    });
-                }
-
-                string? webhookUrl = null;
-                if (data.TryGetProperty("options", out var options))
-                {
-                    foreach (var option in options.EnumerateArray())
-                    {
-                        if (option.TryGetProperty("name", out var optName) &&
-                            optName.GetString() == "webhook_url" &&
-                            option.TryGetProperty("value", out var optVal))
-                        {
-                            webhookUrl = optVal.GetString();
-                            break;
-                        }
-                    }
-                }
-
-                bool usingSavedUrl = false;
-                if (string.IsNullOrWhiteSpace(webhookUrl))
-                {
-                    if (string.IsNullOrWhiteSpace(guild.WebhookUrl))
-                    {
-                        return Results.Json(new
-                        {
-                            type = 4,
-                            data = new { content = "❌ No saved webhook found. Please provide a webhook URL in the command options.", flags = 64 }
-                        });
-                    }
-
-                    webhookUrl = guild.WebhookUrl;
-                    usingSavedUrl = true;
-                }
-                else if (!webhookUrl.StartsWith($"{_discordApiBaseUrl}/webhooks/"))
-                {
-                    return Results.Json(new
-                    {
-                        type = 4,
-                        data = new { content = "❌ Invalid webhook URL provided.", flags = 64 }
-                    });
-                }
-
-                bool pingSuccess = await webhookService.SendTestPingAsync(webhookUrl);
-                if (!pingSuccess)
-                {
-                    guild.WebhookUrl = null;
-                    guild.IsSubscribed = false;
-                    await db.SaveChangesAsync();
-
-                    return Results.Json(new
-                    {
-                        type = 4,
-                        data = new { content = "❌ The webhook URL is invalid or was deleted. Please provide a new one.", flags = 64 }
-                    });
-                }
-
-                guild.WebhookUrl = webhookUrl;
-                guild.IsSubscribed = true;
-                await db.SaveChangesAsync();
-
-                var successMessage = usingSavedUrl
-                    ? "✅ Resubscribed using your previously saved webhook URL!"
-                    : "✅ Subscribed! You'll receive puzzle streak notifications in this channel.";
-
-                return Results.Json(new
-                {
-                    type = 4,
-                    data = new { content = successMessage }
-                });
-            }
-
-            if (commandName == "unsubscribe")
-            {
-                var guild = await db.Guilds.FindAsync(guildId);
-                if (guild is not null)
-                {
-                    guild.IsSubscribed = false;
-                    await db.SaveChangesAsync();
-                }
-
-                return Results.Json(new
-                {
-                    type = 4,
-                    data = new { content = "✅ Unsubscribed. You'll no longer receive puzzle notifications." }
-                });
-            }
-
-            // fallback: launch the activity for any other command 
-            return Results.Json(new { type = 12 });
+                "subscribe" => await HandleSubscribeCommandAsync(data, guildId, db, webhookService),
+                "unsubscribe" => await HandleUnsubscribeCommandAsync(guildId, db),
+                _ => Results.Json(new { type = 12 })
+            };
         }
 
         return Results.BadRequest("Unknown interaction type.");
     }
 
+    private static async Task<IResult> HandleSubscribeCommandAsync(
+        JsonElement data,
+        long guildId,
+        AppDbContext db,
+        DiscordWebhookService webhookService)
+    {
+        var guild = await db.Guilds.FindAsync(guildId);
+        if (guild is null)
+        {
+            return Results.Json(new
+            {
+                type = 4,
+                data = new { content = "❌ Your server is not registered with Bordle yet. Start a game first!", flags = 64 }
+            });
+        }
+
+        string? webhookUrl = null;
+        if (data.TryGetProperty("options", out var options))
+        {
+            foreach (var option in options.EnumerateArray())
+            {
+                if (option.TryGetProperty("name", out var optName) &&
+                    optName.GetString() == "webhook_url" &&
+                    option.TryGetProperty("value", out var optVal))
+                {
+                    webhookUrl = optVal.GetString();
+                    break;
+                }
+            }
+        }
+
+        bool usingSavedUrl = false;
+        if (string.IsNullOrWhiteSpace(webhookUrl))
+        {
+            if (string.IsNullOrWhiteSpace(guild.WebhookUrl))
+            {
+                return Results.Json(new
+                {
+                    type = 4,
+                    data = new { content = "❌ No saved webhook found. Please provide a webhook URL in the command options.", flags = 64 }
+                });
+            }
+
+            webhookUrl = guild.WebhookUrl;
+            usingSavedUrl = true;
+        }
+        else if (!webhookUrl.StartsWith($"{_discordApiBaseUrl}/webhooks/"))
+        {
+            return Results.Json(new
+            {
+                type = 4,
+                data = new { content = "❌ Invalid webhook URL provided.", flags = 64 }
+            });
+        }
+
+        bool pingSuccess = await webhookService.SendTestPingAsync(webhookUrl);
+        if (!pingSuccess)
+        {
+            guild.WebhookUrl = null;
+            guild.IsSubscribed = false;
+            await db.SaveChangesAsync();
+
+            return Results.Json(new
+            {
+                type = 4,
+                data = new { content = "❌ The webhook URL is invalid or was deleted. Please provide a new one.", flags = 64 }
+            });
+        }
+
+        guild.WebhookUrl = webhookUrl;
+        guild.IsSubscribed = true;
+        await db.SaveChangesAsync();
+
+        var successMessage = usingSavedUrl
+            ? "✅ Resubscribed using your previously saved webhook URL!"
+            : "✅ Subscribed! You'll receive puzzle streak notifications in this channel.";
+
+        return Results.Json(new
+        {
+            type = 4,
+            data = new { content = successMessage }
+        });
+    }
+
+    private static async Task<IResult> HandleUnsubscribeCommandAsync(long guildId, AppDbContext db)
+    {
+        var guild = await db.Guilds.FindAsync(guildId);
+        if (guild is not null)
+        {
+            guild.IsSubscribed = false;
+            await db.SaveChangesAsync();
+        }
+
+        return Results.Json(new
+        {
+            type = 4,
+            data = new { content = "✅ Unsubscribed. You'll no longer receive puzzle notifications." }
+        });
+    }
+
+    // Verify the Ed25519 signature of the incoming request from Discord
     private static bool VerifySignature(string publicKeyHex, string signature, string timestamp, string body)
     {
         try

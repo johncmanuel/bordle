@@ -10,7 +10,7 @@ namespace Bordle.Server.Services
         DiscordWebhookService discordWebhookService,
         ILogger<PuzzleGeneratorWorker> logger) : BackgroundService
     {
-        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
+        private static readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -26,7 +26,7 @@ namespace Bordle.Server.Services
                     logger.LogError(ex, "Error during puzzle generation cycle");
                 }
 
-                await Task.Delay(CheckInterval, stoppingToken);
+                await Task.Delay(_checkInterval, stoppingToken);
             }
         }
 

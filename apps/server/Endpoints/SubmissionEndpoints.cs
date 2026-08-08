@@ -8,7 +8,7 @@ public static class SubmissionEndpoints
 {
     // a cooldown for already submitted words. users can submit the
     // same word again after submitting a number of different words
-    private static readonly int CooldownLimit = 5;
+    private static readonly int _cooldownLimit = 5;
 
     public static void RegisterSubmissionEndpoints(this WebApplication app)
     {
@@ -57,7 +57,7 @@ public static class SubmissionEndpoints
         var recentWords = await db.WordSubmissions
             .Where(ws => ws.GuildId == guildId && ws.UserId == userId)
             .OrderByDescending(ws => ws.SubmittedAt)
-            .Take(CooldownLimit)
+            .Take(_cooldownLimit)
             .Select(ws => ws.Word)
             .ToListAsync();
 

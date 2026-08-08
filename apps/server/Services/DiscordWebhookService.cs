@@ -7,9 +7,9 @@ namespace Bordle.Server.Services
     {
         // max message content length for Discord webhooks is 2000 characters
         // https://docs.discord.com/developers/resources/webhook#execute-webhook
-        private readonly int MaxWebhookMessageLength = 2000;
+        private readonly int _maxWebhookMessageLength = 2000;
         // only include the first n players in the streak notification if the message is too long
-        private readonly int NumOldestPlayers = 3;
+        private readonly int _numOldestPlayers = 3;
 
         public async Task SendStreakNotificationAsync(Data.AppDbContext db, long guildId, string webhookUrl, int streakCount, IEnumerable<string?> playerUsernames)
         {
@@ -21,10 +21,10 @@ namespace Bordle.Server.Services
 
             var messagePrefix = $"🔥 Your server is on a **{streakCount}** day streak! Here are the players from yesterday: ";
 
-            if (messagePrefix.Length + playerList.Length > MaxWebhookMessageLength)
+            if (messagePrefix.Length + playerList.Length > _maxWebhookMessageLength)
             {
-                var topPlayers = validPlayers.Take(NumOldestPlayers);
-                playerList = $"{string.Join(", ", topPlayers)} and {validPlayers.Count - NumOldestPlayers} others";
+                var topPlayers = validPlayers.Take(_numOldestPlayers);
+                playerList = $"{string.Join(", ", topPlayers)} and {validPlayers.Count - _numOldestPlayers} others";
             }
 
             var message = $"{messagePrefix}{playerList}";
