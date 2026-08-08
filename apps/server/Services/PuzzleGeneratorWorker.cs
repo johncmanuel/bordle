@@ -38,7 +38,7 @@ namespace Bordle.Server.Services
 #if DEBUG
             // generate every 2 minutes just for faster iteration
             // can be changed as needed
-            var minute = (DateTime.UtcNow.Minute / 2) * 2;
+            var minute = DateTime.UtcNow.Minute / 2 * 2;
             var todayUtc = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, DateTime.UtcNow.Hour, minute, 0, DateTimeKind.Utc);
 #else
             var todayUtc = DateTime.UtcNow.Date;
