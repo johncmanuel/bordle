@@ -1,5 +1,12 @@
 # Bordle
 
+## Slash commands
+
+Bordle includes slash commands for Server Admins (requires the "Manage Webhooks" permission) to manage daily puzzle streak notifications:
+
+- `/subscribe [webhook_url]`: Opts the server into receiving streak notifications. Optionally provide a specific Discord Webhook URL that the server will use to send notifications.
+- `/unsubscribe`: Stops all puzzle notifications for the server.
+
 ## Set up dev environment
 
 ### Env variables
